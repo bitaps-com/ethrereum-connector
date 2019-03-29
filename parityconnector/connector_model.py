@@ -1,5 +1,6 @@
 import asyncio
 from binascii import hexlify, unhexlify
+from asyncpg import BitString
 import time
 from collections import OrderedDict
 import traceback
