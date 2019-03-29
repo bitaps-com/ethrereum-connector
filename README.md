@@ -1,4 +1,4 @@
-# ethereum-node-connector-parity
+# Parity connector
 
 Connector to parity ethereum node, providing ability to monitoring ethereum network events. Built-in synchronization algorithm.
 
