@@ -1,0 +1,5 @@
+aiohttp
+asyncpg
+python-json-logger
+colorlog
+https://github.com/bitaps-com/aiojsonrpc

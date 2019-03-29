@@ -1,0 +1,17 @@
+[POSTGRESQL]
+
+dsn = postgres://test:test@127.0.0.1:5432/test
+pool_threads = 40
+
+[NODE_SOCKET]
+
+url = ws://255.255.255.255:8540
+
+[NODE_URL]
+
+url = http://255.255.255.255:8545
+
+[LOG]
+
+log_level = debug
+
