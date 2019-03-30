@@ -38,7 +38,7 @@ class App:
                 self.postgresql_dsn,
                 tx_handler=self.new_transaction_handler,
                 orphan_handler=self.orphan_block_handler,
-                block_handler=self.new_block_handler,preload=True)
+                block_handler=self.new_block_handler,preload=True, start_block=0)
             await self.connector.connected
         except Exception as err:
             self.log.error("Start failed")
