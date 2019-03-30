@@ -25,7 +25,7 @@ class Connector:
                  block_received_handler=None,
                  orphan_handler=None,
                  expired_tx_handler = None,
-                 pending_update_handler=None,
+                 pending_tx_update_handler=None,
                  rpc_batch_limit=20,
                  rpc_threads_limit=100,
                  rpc_timeout=60,
@@ -56,7 +56,7 @@ class Connector:
 
         self.orphan_handler = orphan_handler
         self.tx_handler = tx_handler
-        self.pending_update_handler= pending_update_handler
+        self.pending_tx_update_handler= pending_tx_update_handler
         self.block_handler = block_handler
         self.block_received_handler = block_received_handler
         self.expired_tx_handler = expired_tx_handler
@@ -214,65 +214,61 @@ class Connector:
                 if tx_cache:
                     tx_id,tx_height =tx_cache
                     if tx_height==block_height:
-                        if block_height:
-                            # if transaction in block
-                            if tx_hash in self.await_tx_list:
-                                self.await_tx_list.remove(tx_hash)
-                                self.await_tx_id_list.append(tx_id)
-                                if not self.await_tx_list:
-                                    self.block_txs_request.set_result(True)
-                            return
-                    if tx_height and not block_height:
-                        return
+                        # if transaction in block
+                        if tx_hash in self.await_tx_list:
+                            self.await_tx_list.remove(tx_hash)
+                            self.await_tx_id_list.append(tx_id)
+                            if not self.await_tx_list:
+                                self.block_txs_request.set_result(True)
+                    return
                 else:
                     tx_id = self.pending_cache.get(binary_tx_hash)
                     if tx_id and not block_height:
                         async with self._db_pool.acquire() as conn:
                             last_seen_timestamp = int(time.time())
                             await update_pending_tx(binary_tx_hash, last_seen_timestamp, conn)
-                            if self.pending_update_handler:
-                                await self.pending_update_handler(binary_tx_hash, last_seen_timestamp, conn)
+                            if self.pending_tx_update_handler:
+                                await self.pending_tx_update_handler(binary_tx_hash, last_seen_timestamp, conn)
                         return
-                if tx is None:
-                    try:
-                        tx = await self.rpc.eth_getTransactionByHash(tx_hash)
-                        if not(tx_hash == tx["hash"]): raise Exception
-                        tx['status'] = 0
-                    except:
-                        if tx:
-                            raise
-                        else:
-                            self.log.debug("None tx data %s" % (tx_hash))
-                            return
+                    if not tx_id:
+                        if tx is None:
+                            try:
+                                tx = await self.rpc.eth_getTransactionByHash(tx_hash)
+                                if not(tx_hash == tx["hash"]): raise Exception
+                                tx['status'] = 0
+                            except:
+                                if tx:
+                                    raise
+                                else:
+                                    self.log.debug("None tx data %s" % (tx_hash))
+                                    return
 
-                async with self._db_pool.acquire() as conn:
-                    tr = conn.transaction()
-                    try:
-                        await tr.start()
-                        # call external handler
-                        handler_result= 0
-                        if self.tx_handler:
-                            handler_result = await self.tx_handler(tx, block_height, conn)
-                            if handler_result != 0 and handler_result != 1:
-                                raise Exception('tx handler error')
-                        await tr.commit()
-                    except:
-                        await tr.rollback()
-                        raise
+                        async with self._db_pool.acquire() as conn:
+                            tr = conn.transaction()
+                            try:
+                                await tr.start()
+                                # call external handler
+                                handler_result= 0
+                                if self.tx_handler:
+                                    handler_result = await self.tx_handler(tx, block_height, conn)
+                                    if handler_result != 0 and handler_result != 1:
+                                        raise Exception('tx handler error')
+                                await tr.commit()
+                            except:
+                                await tr.rollback()
+                                raise
+                        tx_id = await self.insert_new_tx(binary_tx_hash, handler_result)
                     # check if this tx requested by new_block
-                if not tx_id:
-                    tx_id = await self.insert_new_tx(binary_tx_hash, handler_result)
-                # check if this tx requested by new_block
-                if tx_hash in self.await_tx_list:
-                    self.await_tx_list.remove(tx_hash)
-                    self.await_tx_id_list.append(tx_id)
-                    if not self.await_tx_list:
-                        self.block_txs_request.set_result(True)
-                if block_height:
-                    self.tx_cache.set(binary_tx_hash, [tx_id, block_height])
-                    self.pending_cache.pop(binary_tx_hash)
-                else:
-                    self.pending_cache.set(binary_tx_hash, tx_id)
+                    if tx_hash in self.await_tx_list:
+                        self.await_tx_list.remove(tx_hash)
+                        self.await_tx_id_list.append(tx_id)
+                        if not self.await_tx_list:
+                            self.block_txs_request.set_result(True)
+                    if block_height:
+                        self.tx_cache.set(binary_tx_hash, [tx_id, block_height])
+                        self.pending_cache.pop(binary_tx_hash)
+                    else:
+                        self.pending_cache.set(binary_tx_hash, tx_id)
             except Exception as err:
                 self.log.error(str(traceback.format_exc()))
                 self.log.error("new transaction error %s " % err)
@@ -432,7 +428,6 @@ class Connector:
             async with self._db_pool.acquire() as conn:
                 async with conn.transaction():
                     self.await_tx_id_list = []
-                    q=time.time()
                     if 'transactions' in block:
                         transactions = block['transactions']
                     else:
@@ -442,10 +437,11 @@ class Connector:
                             raise Exception('cant get block by height')
                         transactions = block['transactions']
                         self.log.debug('Get block txs  [%s]' % round(time.time() - q, 2))
+                    q = time.time()
                     tx_list, transactions = await self.handle_block_txs(block_height, transactions)
-                    block['transactions']=tx_list
+                    block['transactions']=transactions
                     if round(time.time() - q, 1)>2:
-                        self.log.warning('Long processing time for block txs [%s]' % round(time.time() - q, 2))
+                        self.log.warning('Long handle time for block txs [%s]' % round(time.time() - q, 2))
                     if len(tx_list) != len(self.await_tx_id_list):
                         self.log.error('tx list [%s] await tx list [%s] blockheight [%s]' %(len(tx_list),len(self.await_tx_id_list),block_height))
                         raise Exception('missed block transactions')
