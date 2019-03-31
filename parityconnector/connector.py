@@ -566,6 +566,7 @@ class Connector:
                     receipt[tx['transactionHash']] = {}
                 receipt[tx['transactionHash']]['status'] = tx['status']
                 receipt[tx['transactionHash']]['logs'] = tx['logs']
+                receipt[tx['transactionHash']]['gasUsed']=tx['gasUsed']
             for tx in transactions:
                 if tx['hash'] in internal_tx:
                     tx['internal'] = internal_tx[tx['hash']]
@@ -574,6 +575,7 @@ class Connector:
                 else:
                     tx['status'] = 1
                 tx['logs'] = receipt[tx['hash']]['logs']
+                tx['gasUsed'] = receipt[tx['hash']]['gasUsed']
         return transactions
 
 
