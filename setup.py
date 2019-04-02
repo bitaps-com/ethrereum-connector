@@ -8,5 +8,5 @@ setup(name='Parity ethereum node connector',
       author='Aleksey Karpov/Nadezhda Karpova',
       author_email='nadyka@bitaps.com',
       url='https://github.com/bitaps-com/parity-connector.git',
-      packages=['parity-connector', ],
+      packages=['parityconnector', ],
      )
