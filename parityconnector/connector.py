@@ -457,11 +457,11 @@ class Connector:
                     self.block_cache.set(binary_block_hash, block_height)
                     self.log.debug('Insert in db time [%s]' % round(time.time() - q, 2))
                     self.last_block_height=block_height
-            # after block added handler
-            if self.block_handler:
-                q = time.time()
-                await self.block_handler(block, conn)
-                self.log.info('block_handler time [%s]' % round(time.time() - q, 2))
+                # after block added handler
+                if self.block_handler:
+                    q = time.time()
+                    await self.block_handler(block, conn)
+                    self.log.info('block_handler time [%s]' % round(time.time() - q, 2))
         except Exception as err:
             self.log.error(str(traceback.format_exc()))
             self.log.error("new block error %s" % str(err))
