@@ -188,18 +188,18 @@ class Connector:
                 session.close()
             await asyncio.sleep(1)
 
-    def subscribe_blocks(self):
-        self.ws.send_str('{"jsonrpc":"2.0", "id": 1, "method":"eth_subscribe", "params": ["newHeads"]}')
+    async def subscribe_blocks(self):
+        await self.ws.send_str('{"jsonrpc":"2.0", "id": 1, "method":"eth_subscribe", "params": ["newHeads"]}')
 
-    def unsubscribe_blocks(self):
-        self.ws.send_str('{"jsonrpc":"2.0","id": 3, "method":"eth_unsubscribe", "params": ["%s"]}' % self.block_sub)
+    async def unsubscribe_blocks(self):
+        await self.ws.send_str('{"jsonrpc":"2.0","id": 3, "method":"eth_unsubscribe", "params": ["%s"]}' % self.block_sub)
         self.log.info("Blocks subscription canceled")
 
-    def subscribe_transactions(self):
-        self.ws.send_str('{"jsonrpc":"2.0","id": 2, "method": "eth_subscribe", "params": ["newPendingTransactions"]}')
+    async def subscribe_transactions(self):
+        await self.ws.send_str('{"jsonrpc":"2.0","id": 2, "method": "eth_subscribe", "params": ["newPendingTransactions"]}')
 
-    def unsubscribe_transactions(self):
-        self.ws.send_str('{"jsonrpc":"2.0","id": 4, "method": "eth_unsubscribe", "params": ["%s"]}' % self.tx_sub)
+    async def unsubscribe_transactions(self):
+        await self.ws.send_str('{"jsonrpc":"2.0","id": 4, "method": "eth_unsubscribe", "params": ["%s"]}' % self.tx_sub)
         self.log.info("Transactions subscription canceled")
 
 
