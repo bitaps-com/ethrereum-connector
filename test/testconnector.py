@@ -53,7 +53,7 @@ class App:
         pass
 
 
-    async def new_transaction_handler(self, data,block_height, conn):
+    async def new_transaction_handler(self, data,block_height, block_time):
         return 1
 
     def _exc(self, a, b, c):

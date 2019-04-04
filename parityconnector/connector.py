@@ -204,7 +204,7 @@ class Connector:
 
 
 
-    async def _new_transaction(self, tx_hash, tx = None,block_height = None):
+    async def _new_transaction(self, tx_hash, tx = None,block_height = None,block_time = None):
             binary_tx_hash=unhexlify(tx_hash[2:])
             if tx_hash in self.tx_in_process:
                 return
@@ -243,20 +243,12 @@ class Connector:
                                     self.log.debug("None tx data %s" % (tx_hash))
                                     return
 
-                        async with self._db_pool.acquire() as conn:
-                            tr = conn.transaction()
-                            try:
-                                await tr.start()
-                                # call external handler
-                                handler_result= 0
-                                if self.tx_handler:
-                                    handler_result = await self.tx_handler(tx, block_height, conn)
-                                    if handler_result != 0 and handler_result != 1:
-                                        raise Exception('tx handler error')
-                                await tr.commit()
-                            except:
-                                await tr.rollback()
-                                raise
+                        # call external handler
+                        handler_result= 0
+                        if self.tx_handler:
+                            handler_result = await self.tx_handler(tx, block_height, block_time)
+                            if handler_result != 0 and handler_result != 1:
+                                raise Exception('tx handler error')
                         tx_id = await self.insert_new_tx(binary_tx_hash, handler_result)
                     # check if this tx requested by new_block
                     if tx_hash in self.await_tx_list:
@@ -376,6 +368,7 @@ class Connector:
                 if "parentHash" in block else None
         bt = time.time()
         block_height = int(block["number"], 16)
+        block_time=int(block['timestamp'],16)
         self.log.info('parent hash %s' %block["parentHash"])
         next_block_height=block_height+1
         try:
@@ -438,7 +431,7 @@ class Connector:
                         transactions = block['transactions']
                         self.log.debug('Get block txs  [%s]' % round(time.time() - q, 2))
                     q = time.time()
-                    tx_list, transactions = await self.handle_block_txs(block_height, transactions)
+                    tx_list, transactions = await self.handle_block_txs(block_height, block_time, transactions)
                     block['transactions']=transactions
                     if round(time.time() - q, 1)>2:
                         self.log.warning('Long handle time for block txs [%s]' % round(time.time() - q, 2))
@@ -475,14 +468,14 @@ class Connector:
             self.log.warning("%s block processing time [%s]" % (block_height, round(time.time() - bt, 2)))
 
 
-    async def handle_block_txs(self, block_height,transactions):
+    async def handle_block_txs(self, block_height,block_time,transactions):
         self.log.info("%s transactions received" % len(transactions))
         if transactions:
             self.block_txs_request = asyncio.Future()
             tx_list = [tx["hash"] for tx in transactions]
             self.await_tx_list = list(tx_list)
             for tx in transactions:
-                self.loop.create_task(self._new_transaction(tx["hash"], tx=tx, block_height=block_height))
+                self.loop.create_task(self._new_transaction(tx["hash"], tx=tx, block_height=block_height,block_time=block_time))
             await asyncio.wait_for(self.block_txs_request, timeout=self.block_timeout)
             return tx_list, transactions
         else:
