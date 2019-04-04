@@ -514,8 +514,8 @@ class Connector:
                 transactions=await self.get_block_trace_and_receipt(block_height,block["hash"],block["transactions"])
                 uncles_data = []
                 if block["uncles"]:
-                    for u in block["uncles"]:
-                        u_data = await self.get_block_uncles(u)
+                    for index in range(len(block["uncles"])):
+                        u_data = await self.get_block_uncles(block["hash"],index)
                         uncles_data.append(u_data)
                 block['transactions']=transactions
                 block['uncles_data']=uncles_data
@@ -525,16 +525,16 @@ class Connector:
             self.log.error("Get block by height %s failed" % block_height)
             return None
 
-    async def get_block_uncles(self,uncle_hash):
+    async def get_block_uncles(self,block_hash,index):
         try:
-            uncle = await self.rpc.eth_getBlockByHash(uncle_hash, False)
+            uncle = await self.rpc.eth_getUncleByBlockHashAndIndex(block_hash,hex(index))
             if uncle is None:
                 await asyncio.sleep(1)
             else:
                 return uncle
         except Exception:
             self.log.error(str(traceback.format_exc()))
-            self.log.error("Get uncle %s failed" % uncle_hash)
+            self.log.error("Get uncle %s failed" % block_hash)
             return None
 
 
