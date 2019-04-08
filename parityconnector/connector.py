@@ -146,7 +146,7 @@ class Connector:
                 await self.subscribe_transactions()
                 while True:
                     msg = await self.ws.receive()
-                    if msg.tp == aiohttp.WSMsgType.TEXT:
+                    if msg.type == aiohttp.WSMsgType.TEXT:
                         try:
                             data = json.loads(msg.data)
                         except ValueError:
@@ -170,10 +170,10 @@ class Connector:
                         except Exception as err:
                             self.log.error("error>: %s" % str(err))
                             self.log.error(traceback.format_exc())
-                    elif msg.tp in (aiohttp.WSMsgType.ERROR,
+                    elif msg.type in (aiohttp.WSMsgType.ERROR,
                                     aiohttp.WSMsgType.CLOSE,
                                     aiohttp.WSMsgType.CLOSED):
-                        self.log.error("websocket error 1 %s" % msg.tp.name)
+                        self.log.error("websocket error 1 %s" % msg.type.name)
                         break
             except asyncio.CancelledError:
                 await self.ws.close()
@@ -185,7 +185,7 @@ class Connector:
                 self.connected.cancel()
                 self.connected = asyncio.Future()
             finally:
-                session.close()
+                await session.close()
             await asyncio.sleep(1)
 
     async def subscribe_blocks(self):
@@ -588,7 +588,7 @@ class Connector:
         if not self.active_block.done():
             self.log.warning("Waiting active block task")
             await self.active_block
-        self.session.close()
+        await self.session.close()
         self.log.warning("Close websocket")
         if self.websocket:
             self.websocket.cancel()
