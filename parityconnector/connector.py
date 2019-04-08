@@ -71,7 +71,7 @@ class Connector:
         self.connected = asyncio.Future()
 
         self.preload = preload
-        self.block_preload = Cache(max_size=250)
+        self.block_preload = Cache(max_size=10000)
         self.tx_cache = Cache(max_size=50000)
         self.pending_cache = Cache(max_size=100000)
         self.block_cache = Cache(max_size=10000)
