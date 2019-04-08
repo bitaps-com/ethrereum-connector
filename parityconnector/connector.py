@@ -121,7 +121,7 @@ class Connector:
             self.trace_rpc = aiojsonrpc.rpc(self.trace_rpc_url, self.loop, timeout=self.rpc_timeout)
         else:
             self.trace_rpc=None
-        self.websocket = await self.websocket_client()
+        self.websocket = self.loop.create_task(self.websocket_client())
         self._watchdog = self.loop.create_task(self.watchdog())
         if self.preload:
             self.loop.create_task(self.preload_block())
@@ -310,15 +310,24 @@ class Connector:
             data = await self.rpc.eth_blockNumber()
             last_block_node = int(data,16)
             if self.last_block_height and last_block_node > self.last_block_height + 10000:
-                if self.block_sub:
-                    await self.unsubscribe_blocks()
-                if self.tx_sub:
-                    await self.unsubscribe_transactions()
+                try:
+                    if self.block_sub:
+                        await self.unsubscribe_blocks()
+                    if self.tx_sub:
+                        await self.unsubscribe_transactions()
+                except:
+                    self.log.error(str(traceback.format_exc()))
+                    self.log.error("ws unsubscribe error")
+
             else:
-                if not self.block_sub:
-                    await self.subscribe_blocks()
-                if not self.tx_sub:
-                    await self.subscribe_transactions()
+                try:
+                    if not self.block_sub:
+                        await self.subscribe_blocks()
+                    if not self.tx_sub:
+                        await self.subscribe_transactions()
+                except:
+                    self.log.error(str(traceback.format_exc()))
+                    self.log.error("ws subscribe error")
 
             if not self.last_block_height or last_block_node>self.last_block_height:
                 block=await self.get_block_by_height(last_block_node)
