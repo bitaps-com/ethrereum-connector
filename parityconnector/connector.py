@@ -71,7 +71,7 @@ class Connector:
         self.connected = asyncio.Future()
 
         self.preload = preload
-        self.block_preload = Cache(max_size=10000)
+        self.block_preload = Cache(max_size=50000)
         self.tx_cache = Cache(max_size=50000)
         self.pending_cache = Cache(max_size=100000)
         self.block_cache = Cache(max_size=10000)
@@ -140,10 +140,10 @@ class Connector:
                 self.tx_sub = False
                 self.block_sub = False
                 self.log.info('websocket connected')
-                if self.tx_sub: self.unsubscribe_blocks()
-                if self.block_sub: self.unsubscribe_transactions()
-                self.subscribe_blocks()
-                self.subscribe_transactions()
+                if self.tx_sub: await self.unsubscribe_blocks()
+                if self.block_sub: await self.unsubscribe_transactions()
+                await self.subscribe_blocks()
+                await self.subscribe_transactions()
                 while True:
                     msg = await self.ws.receive()
                     if msg.tp == aiohttp.WSMsgType.TEXT:
@@ -331,7 +331,7 @@ class Connector:
                         while True:
                             if not self.active:
                                  raise asyncio.CancelledError
-                            if start_height + 200 < height:
+                            if start_height + 15000 < height:
                                 break
                             ex = self.block_preload.get(height)
                             if not ex:
@@ -580,10 +580,10 @@ class Connector:
             self._watchdog.cancel()
         self.log.warning("Unsubscribe blocks")
         if self.block_sub:
-           self.unsubscribe_blocks()
+           await self.unsubscribe_blocks()
            self.log.warning("Unsubscribe transactions")
         if self.tx_sub:
-            self.unsubscribe_transactions()
+            await self.unsubscribe_transactions()
         self.log.warning("New block processing restricted")
         if not self.active_block.done():
             self.log.warning("Waiting active block task")
