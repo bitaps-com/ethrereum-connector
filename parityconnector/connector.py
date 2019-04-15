@@ -562,10 +562,14 @@ class Connector:
                 for tx in block_trace:
                     if not tx['transactionHash'] in trace:
                         trace[tx['transactionHash']] = list()
-                    trace[tx['transactionHash']].append(tx)
+                    tx_trace=tx
+                    del tx_trace['blockHash']
+                    del tx_trace['blockNumber']
+                    del tx_trace['transactionHash']
+                    del tx_trace['transactionPosition']
+                    trace[tx['transactionHash']].append(tx_trace)
                 for key in trace:
-                    if len(trace[key]) > 1:
-                        internal_tx[key] = trace[key][1:]
+                    internal_tx[key] = trace[key]
             receipt = {}
             q = time.time()
             block_receipt = await self.rpc.parity_getBlockReceipts(hex(block_height))
@@ -579,14 +583,20 @@ class Connector:
                 receipt[tx['transactionHash']]['logs'] = tx['logs']
                 receipt[tx['transactionHash']]['gasUsed']=tx['gasUsed']
             for tx in transactions:
-                if tx['hash'] in internal_tx:
-                    tx['internal'] = internal_tx[tx['hash']]
                 if receipt[tx['hash']]['status'] == '0x0':
                     tx['status'] = 2
                 else:
                     tx['status'] = 1
                 tx['logs'] = receipt[tx['hash']]['logs']
                 tx['gasUsed'] = receipt[tx['hash']]['gasUsed']
+                if tx['hash'] in internal_tx:
+                    if 'result' in tx:
+                        tx['result'] = internal_tx[tx['hash']][0]['result']
+                    else:
+                        tx['result']=None
+                    tx['internal'] = internal_tx[tx['hash']]
+                    if 'error' in internal_tx[tx['hash']][0]:
+                        tx['status'] = 2
         return transactions
 
 
