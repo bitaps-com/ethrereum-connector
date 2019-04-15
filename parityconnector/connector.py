@@ -565,7 +565,6 @@ class Connector:
                     tx_trace=tx
                     del tx_trace['blockHash']
                     del tx_trace['blockNumber']
-                    del tx_trace['transactionHash']
                     del tx_trace['transactionPosition']
                     trace[tx['transactionHash']].append(tx_trace)
                 for key in trace:
