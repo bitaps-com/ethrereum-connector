@@ -233,7 +233,6 @@ class Connector:
                             try:
                                 tx = await self.rpc.eth_getTransactionByHash(tx_hash)
                                 if not(tx_hash == tx["hash"]): raise Exception
-                                tx['status'] = 0
                             except:
                                 if tx:
                                     raise
@@ -551,7 +550,7 @@ class Connector:
 
     async def get_block_trace_and_receipt(self, block_height,block_hash,transactions):
         if transactions:
-            internal_tx = {}
+            trace_tx = {}
             if self.trace_rpc:
                 q = time.time()
                 block_trace = await self.trace_rpc.trace_block(hex(block_height))
@@ -568,7 +567,7 @@ class Connector:
                     del tx_trace['transactionPosition']
                     trace[tx['transactionHash']].append(tx_trace)
                 for key in trace:
-                    internal_tx[key] = trace[key]
+                    trace_tx[key] = trace[key]
             receipt = {}
             q = time.time()
             block_receipt = await self.rpc.parity_getBlockReceipts(hex(block_height))
@@ -583,19 +582,19 @@ class Connector:
                 receipt[tx['transactionHash']]['gasUsed']=tx['gasUsed']
             for tx in transactions:
                 if receipt[tx['hash']]['status'] == '0x0':
-                    tx['status'] = 2
+                    tx['status'] = 0
                 else:
                     tx['status'] = 1
                 tx['logs'] = receipt[tx['hash']]['logs']
                 tx['gasUsed'] = receipt[tx['hash']]['gasUsed']
-                if tx['hash'] in internal_tx:
+                if tx['hash'] in trace_tx:
                     if 'result' in tx:
-                        tx['result'] = internal_tx[tx['hash']][0]['result']
+                        tx['result'] = trace_tx[tx['hash']][0]['result']
                     else:
                         tx['result']=None
-                    tx['internal'] = internal_tx[tx['hash']]
-                    if 'error' in internal_tx[tx['hash']][0]:
-                        tx['status'] = 2
+                    tx['trace'] = trace_tx[tx['hash']]
+                    if 'error' in trace_tx[tx['hash']][0]:
+                        tx['status'] = 0
         return transactions
 
 
