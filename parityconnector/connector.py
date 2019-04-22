@@ -429,7 +429,7 @@ class Connector:
                             self.sync_requested = True
                             self.last_block_height-=1
                             next_block_height = self.last_block_height + 1
-                            self.log.info('Orphan handler time [%s]' % round(time.time() - q, 2))
+                            self.log.info('Orphan handler time [%s]' % round(time.time() - q, 4))
                             return
 
             if block_height > self.sync:
@@ -446,32 +446,32 @@ class Connector:
                         if not block:
                             raise Exception('cant get block by height')
                         transactions = block['transactions']
-                        self.log.debug('Get block txs  [%s]' % round(time.time() - q, 2))
+                        self.log.debug('Get block txs  [%s]' % round(time.time() - q, 4))
                     q = time.time()
                     tx_list, transactions = await self.handle_block_txs(block_height, block_time, transactions)
                     block['transactions']=transactions
                     if round(time.time() - q, 1)>2:
-                        self.log.warning('Long handle time for block txs [%s]' % round(time.time() - q, 2))
+                        self.log.warning('Long handle time for block txs [%s]' % round(time.time() - q, 4))
                     if len(tx_list) != len(self.await_tx_id_list):
                         self.log.error('tx list [%s] await tx list [%s] blockheight [%s]' %(len(tx_list),len(self.await_tx_id_list),block_height))
                         raise Exception('missed block transactions')
                     if self.block_received_handler:
                         q = time.time()
                         await self.block_received_handler(block, conn)
-                        self.log.info('block_received_handler time [%s]' % round(time.time() - q, 2))
+                        self.log.info('block_received_handler time [%s]' % round(time.time() - q, 4))
                     # insert new block
                     q = time.time()
                     await insert_new_block(self,binary_block_hash, block_height,
                                            binary_previousblock_hash,block["timestamp"],conn)
                     await update_block_height(self,block_height,self.await_tx_id_list,None, conn)
                     self.block_cache.set(binary_block_hash, block_height)
-                    self.log.debug('Insert in db time [%s]' % round(time.time() - q, 2))
+                    self.log.debug('Insert in db time [%s]' % round(time.time() - q, 4))
                     self.last_block_height=block_height
                 # after block added handler
                 if self.block_handler:
                     q = time.time()
                     await self.block_handler(block, conn)
-                    self.log.info('block_handler time [%s]' % round(time.time() - q, 2))
+                    self.log.info('block_handler time [%s]' % round(time.time() - q, 4))
         except Exception as err:
             self.log.error(str(traceback.format_exc()))
             self.log.error("new block error %s" % str(err))
@@ -482,7 +482,7 @@ class Connector:
             if self.sync_requested:
                 self.log.debug("requested %s" % next_block_height)
                 self.loop.create_task(self.request_block_by_height(next_block_height))
-            self.log.warning("%s block processing time [%s]" % (block_height, round(time.time() - bt, 2)))
+            self.log.warning("%s block processing time [%s]" % (block_height, round(time.time() - bt, 4)))
 
 
     async def handle_block_txs(self, block_height,block_time,transactions):
