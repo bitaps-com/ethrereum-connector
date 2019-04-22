@@ -4,6 +4,7 @@ import aiohttp
 import json
 import aiojsonrpc
 import time
+from binascii import hexlify, unhexlify
 
 from .connector_model import *
 

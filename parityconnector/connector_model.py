@@ -1,7 +1,6 @@
 import asyncio
 import time
 from collections import OrderedDict
-import traceback
 
 class Cache():
     def __init__(self, max_size=1000):
@@ -107,7 +106,6 @@ def block_hash_by_height(app,block_height):
 
 
 def clear_expired_tx(app,unconfirmed_exp = 12):
-    try:
         expired_hash_list=[]
         expired_timestamp=int(time.time()) - 60*60*unconfirmed_exp
         for i in app.pending_cache._store:
@@ -116,8 +114,6 @@ def clear_expired_tx(app,unconfirmed_exp = 12):
         if expired_hash_list:
                 [app.pending_cache.pop(tx_hash) for tx_hash in expired_hash_list]
         return expired_hash_list
-    except:
-        app.log.error(str(traceback.format_exc()))
 
 
 
