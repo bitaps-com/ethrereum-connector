@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='Parity ethereum node connector',
-      version='0.0.3',
+      version='0.0.4',
       description='Connector to parity ethereum node.',
       author='Aleksey Karpov/Nadezhda Karpova',
       author_email='nadyka@bitaps.com',
