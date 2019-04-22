@@ -45,11 +45,11 @@ class App:
             self.log.error(str(traceback.format_exc()))
 
 
-    async def orphan_block_handler(self, orphan_height, orphan_hash, conn):
+    async def orphan_block_handler(self, orphan_height, orphan_hash):
         pass
 
 
-    async def new_block_handler(self, block, conn):
+    async def new_block_handler(self, block):
         pass
 
 

@@ -111,6 +111,7 @@ class Connector:
         self._watchdog = self.loop.create_task(self.watchdog())
         if self.preload:
             self.loop.create_task(self.preload_block())
+        await asyncio.sleep(0.1)
         self.loop.create_task(self.get_last_block())
 
 
@@ -265,7 +266,7 @@ class Connector:
                 return
             data = await self.rpc.eth_blockNumber()
             last_block_node = int(data,16)
-            if self.last_block_height and last_block_node > self.last_block_height + 10000:
+            if not self.last_block_height or last_block_node > self.last_block_height + 10000:
                 try:
                     if self.block_sub:
                         await self.unsubscribe_blocks()
@@ -298,10 +299,10 @@ class Connector:
             try:
                 if self.last_block_height:
                     start_height = self.last_block_height
-                    height = start_height + 50
+                    height = start_height + 10000
                     data = await self.rpc.eth_blockNumber()
                     last_block_node = int(data, 16)
-                    if last_block_node > start_height + 1000:
+                    if last_block_node > start_height + 10000:
                         while True:
                             if not self.active:
                                  raise asyncio.CancelledError
@@ -321,7 +322,7 @@ class Connector:
                 break
             except:
                 self.log.error(str(traceback.format_exc()))
-            await asyncio.sleep(5)
+            await asyncio.sleep(0.5)
 
 
     async def _new_block(self, block):
@@ -384,40 +385,40 @@ class Connector:
                         next_block_height = self.last_block_height + 1
                         self.log.info('Orphan handler time [%s]' % round(time.time() - q, 4))
                         return
-
             if block_height > self.sync:
+                self.log.warning("else")
                 self.sync = block_height
                 self.sync_requested = False
-                self.await_tx_list_check = []
-                if 'transactions' in block:
-                    transactions = block['transactions']
-                else:
-                    q = time.time()
-                    block = await self.get_block_by_height(block_height)
-                    if not block:
-                        raise Exception('cant get block by height')
-                    transactions = block['transactions']
-                    self.log.debug('Get block txs  [%s]' % round(time.time() - q, 4))
+            self.await_tx_list_check = []
+            if 'transactions' in block:
+                transactions = block['transactions']
+            else:
                 q = time.time()
-                tx_list, transactions = await self.handle_block_txs(block_height, block_time, transactions)
-                block['transactions']=transactions
-                if transactions:
-                    self.log.info('block_txs_handler time [%s]' % round(time.time() - q, 4))
-                if len(tx_list) != len(self.await_tx_list_check):
-                    self.log.error('tx list [%s] await tx list [%s] blockheight [%s]' % (len(tx_list), len(self.await_tx_list_check), block_height))
-                    raise Exception('missed block transactions')
-                if self.block_received_handler:
-                    q = time.time()
-                    await self.block_received_handler(block)
-                    self.log.info('block_received_handler time [%s]' % round(time.time() - q, 4))
-                self.last_inserted_block = [binary_block_hash, block_height]
-                self.block_cache.set(binary_block_hash, block_height)
-                self.last_block_height=block_height
-                # after block added handler
-                if self.block_handler:
-                    q = time.time()
-                    await self.block_handler(block)
-                    self.log.info('block_handler time [%s]' % round(time.time() - q, 4))
+                block = await self.get_block_by_height(block_height)
+                if not block:
+                    raise Exception('cant get block by height')
+                transactions = block['transactions']
+                self.log.debug('Get block txs  [%s]' % round(time.time() - q, 4))
+            q = time.time()
+            tx_list, transactions = await self.handle_block_txs(block_height, block_time, transactions)
+            block['transactions']=transactions
+            if transactions:
+                self.log.info('block_txs_handler time [%s]' % round(time.time() - q, 4))
+            if len(tx_list) != len(self.await_tx_list_check):
+                self.log.error('tx list [%s] await tx list [%s] blockheight [%s]' % (len(tx_list), len(self.await_tx_list_check), block_height))
+                raise Exception('missed block transactions')
+            if self.block_received_handler:
+                q = time.time()
+                await self.block_received_handler(block)
+                self.log.info('block_received_handler time [%s]' % round(time.time() - q, 4))
+            self.last_inserted_block = [binary_block_hash, block_height]
+            self.block_cache.set(binary_block_hash, block_height)
+            self.last_block_height=block_height
+            # after block added handler
+            if self.block_handler:
+                q = time.time()
+                await self.block_handler(block)
+                self.log.info('block_handler time [%s]' % round(time.time() - q, 4))
         except Exception as err:
             self.log.error(str(traceback.format_exc()))
             self.log.error("new block error %s" % str(err))
@@ -426,8 +427,9 @@ class Connector:
         finally:
             self.active_block.set_result(True)
             if self.sync_requested:
-                self.log.debug("requested %s" % next_block_height)
-                self.loop.create_task(self.request_block_by_height(next_block_height))
+                if not block_exist:
+                    self.log.debug("requested %s" % next_block_height)
+                    self.loop.create_task(self.request_block_by_height(next_block_height))
             self.log.warning("%s block processing time [%s]" % (block_height, round(time.time() - bt, 4)))
 
 
