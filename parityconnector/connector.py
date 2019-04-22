@@ -450,8 +450,8 @@ class Connector:
                     q = time.time()
                     tx_list, transactions = await self.handle_block_txs(block_height, block_time, transactions)
                     block['transactions']=transactions
-                    if round(time.time() - q, 1)>2:
-                        self.log.warning('Long handle time for block txs [%s]' % round(time.time() - q, 4))
+                    if transactions:
+                        self.log.info('block_txs_handler time [%s]' % round(time.time() - q, 4))
                     if len(tx_list) != len(self.await_tx_id_list):
                         self.log.error('tx list [%s] await tx list [%s] blockheight [%s]' %(len(tx_list),len(self.await_tx_id_list),block_height))
                         raise Exception('missed block transactions')
