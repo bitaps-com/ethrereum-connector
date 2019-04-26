@@ -376,7 +376,7 @@ class Connector:
                     if parent_exist is None:
                         q = time.time()
                         orphan_block_height=self.last_block_height
-                        if self.tx_cache.len() < 5000 or self.block_cache.len<50:
+                        if self.tx_cache.len() < 5000 or self.block_cache.len()<50:
                             if self.cache_update:
                                 self.tx_cache,self.block_cache=await self.cache_update()
                         orphan_binary_block_hash =block_hash_by_height(self,orphan_block_height)
