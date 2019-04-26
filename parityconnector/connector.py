@@ -22,6 +22,7 @@ class Connector:
                  tx_cache = Cache(max_size=50000),
                  pending_cache=Cache(max_size=100000),
                  block_cache = Cache(max_size=10000),
+                 cache_update=None,
                  start_block=None,
                  tx_handler=None,
                  block_handler=None,
@@ -55,6 +56,7 @@ class Connector:
         self.postgresql_pool_max_size = postgresql_pool_max_size
         self.postgresql_dsn = postgresql_dsn
 
+        self.cache_update=cache_update
         self.orphan_handler = orphan_handler
         self.tx_handler = tx_handler
         self.pending_tx_update_handler= pending_tx_update_handler
@@ -374,6 +376,9 @@ class Connector:
                     if parent_exist is None:
                         q = time.time()
                         orphan_block_height=self.last_block_height
+                        if self.tx_cache.len() < 5000 or self.block_cache.len<50:
+                            if self.cache_update:
+                                self.tx_cache,self.block_cache=await self.cache_update()
                         orphan_binary_block_hash =block_hash_by_height(self,orphan_block_height)
                         if self.orphan_handler:
                             await self.orphan_handler(orphan_block_height, orphan_binary_block_hash)
