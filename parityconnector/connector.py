@@ -213,12 +213,12 @@ class Connector:
                     if tx_cache:
                         tx_height, last_timestamp = tx_cache
                         if not block_height:
-                                last_seen_timestamp = int(time.time())
-                                upd_tx_cache=(tx_height, last_seen_timestamp)
-                                self.pending_cache.set(binary_tx_hash,upd_tx_cache)
-                                if self.pending_tx_update_handler:
-                                    await self.pending_tx_update_handler(binary_tx_hash, last_seen_timestamp)
-                        return
+                            last_seen_timestamp = int(time.time())
+                            upd_tx_cache=(tx_height, last_seen_timestamp)
+                            self.pending_cache.set(binary_tx_hash,upd_tx_cache)
+                            if self.pending_tx_update_handler:
+                                await self.pending_tx_update_handler(binary_tx_hash, last_seen_timestamp)
+                            return
                     else:
                         if tx is None:
                             try:
