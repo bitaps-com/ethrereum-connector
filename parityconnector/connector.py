@@ -191,7 +191,7 @@ class Connector:
 
 
 
-    async def _new_transaction(self, tx_hash, tx = None,block_height = None,block_time = None):
+    async def _new_transaction(self, tx_hash, tx = None,block_height = -1,block_time = None):
             binary_tx_hash=unhexlify(tx_hash[2:])
             if tx_hash in self.tx_in_process:
                 return
@@ -211,10 +211,9 @@ class Connector:
                 else:
                     tx_cache = self.pending_cache.get(binary_tx_hash)
                     if tx_cache:
-                        tx_height, last_timestamp = tx_cache
-                        if not block_height:
+                        if block_height==-1:
                             last_seen_timestamp = int(time.time())
-                            upd_tx_cache=(tx_height, last_seen_timestamp)
+                            upd_tx_cache=(-1, last_seen_timestamp)
                             self.pending_cache.set(binary_tx_hash,upd_tx_cache)
                             if self.pending_tx_update_handler:
                                 await self.pending_tx_update_handler(binary_tx_hash, last_seen_timestamp)
@@ -232,25 +231,23 @@ class Connector:
                                     return
 
                         # call external handler
-                        handler_result= 0
                         if self.tx_handler:
-                            await self.tx_handler(tx,block_height, block_time)
+                            handler_result=await self.tx_handler(tx,block_height, block_time)
                             if handler_result != 0 and handler_result != 1:
                                 raise Exception('tx handler error')
-                    # check if this tx requested by new_block
-                    if tx_hash in self.await_tx_list:
-                        self.await_tx_list.remove(tx_hash)
-                        self.await_tx_list_check.append(tx_hash)
-                        if not self.await_tx_list:
-                            self.block_txs_request.set_result(True)
-                    if block_height:
+                    if block_height==-1:
+                        tx_cache = (block_height, int(time.time()))
+                        self.pending_cache.set(binary_tx_hash, tx_cache)
+                    else:
+                        if tx_hash in self.await_tx_list:
+                            # check if this tx requested by new_block
+                            self.await_tx_list.remove(tx_hash)
+                            self.await_tx_list_check.append(tx_hash)
+                            if not self.await_tx_list:
+                                self.block_txs_request.set_result(True)
                         tx_cache=(block_height,block_time)
                         self.tx_cache.set(binary_tx_hash, tx_cache)
                         self.pending_cache.pop(binary_tx_hash)
-                    else:
-                        block_height=-1
-                        tx_cache = (block_height, int(time.time()))
-                        self.pending_cache.set(binary_tx_hash, tx_cache)
             except Exception as err:
                 self.log.error(str(traceback.format_exc()))
                 self.log.error("new transaction error %s " % err)
