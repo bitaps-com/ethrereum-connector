@@ -593,6 +593,7 @@ class Connector:
                     self.log.info('tx cache len %s' % (self.tx_cache.len()))
                     self.log.info('pending cache len %s' % (self.pending_cache.len()))
                     expired_hash_list=clear_expired_tx(self)
+                    self.log.info('expired tx len %s' % (len(expired_hash_list)))
                     if expired_hash_list:
                         if self.expired_tx_handler:
                             await self.expired_tx_handler(expired_hash_list)
