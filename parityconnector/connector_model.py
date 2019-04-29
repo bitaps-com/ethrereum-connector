@@ -121,7 +121,7 @@ def clear_expired_tx(app,unconfirmed_exp = 12):
 def remove_orphan(app,block_height,binary_block_hash):
     tx_hash_list=[]
     for i in app.tx_cache._store:
-        if app.tx_cache._store[i][1]==block_height:
+        if app.tx_cache._store[i][0]==block_height:
             tx_cache=(-1,app.tx_cache._store[i][1])
             app.pending_cache.set(i,tx_cache)
             tx_hash_list.append(i)
