@@ -239,15 +239,15 @@ class Connector:
                         tx_cache = (block_height, int(time.time()))
                         self.pending_cache.set(binary_tx_hash, tx_cache)
                     else:
+                        tx_cache=(block_height,block_time)
+                        self.tx_cache.set(binary_tx_hash, tx_cache)
+                        self.pending_cache.pop(binary_tx_hash)
                         if tx_hash in self.await_tx_list:
                             # check if this tx requested by new_block
                             self.await_tx_list.remove(tx_hash)
                             self.await_tx_list_check.append(tx_hash)
                             if not self.await_tx_list:
                                 self.block_txs_request.set_result(True)
-                        tx_cache=(block_height,block_time)
-                        self.tx_cache.set(binary_tx_hash, tx_cache)
-                        self.pending_cache.pop(binary_tx_hash)
             except Exception as err:
                 self.log.error(str(traceback.format_exc()))
                 self.log.error("new transaction error %s " % err)
@@ -373,9 +373,9 @@ class Connector:
                     if parent_exist is None:
                         q = time.time()
                         orphan_block_height=self.last_block_height
-                        if self.tx_cache.len() < 5000 or self.block_cache.len()<50:
-                            if self.cache_update:
-                                self.tx_cache,self.block_cache=await self.cache_update()
+                        # if self.tx_cache.len() < 5000 or self.block_cache.len()<50:
+                        #     if self.cache_update:
+                        #         self.tx_cache,self.block_cache=await self.cache_update()
                         orphan_binary_block_hash =block_hash_by_height(self,orphan_block_height)
                         if self.orphan_handler:
                             await self.orphan_handler(orphan_block_height, orphan_binary_block_hash)
