@@ -126,7 +126,7 @@ def remove_orphan(app,block_height,binary_block_hash):
             tx_cache=(-1,app.tx_cache._store[i][1])
             app.pending_cache.set(i,tx_cache)
             tx_hash_list.append(i)
-            app.log.warning('orphan remove tx hash 0x%s tx cache %s' %(hexlify(i),tx_cache))
+            app.log.warning('orphan remove tx hash 0x%s tx cache %s' %(hexlify(i).decode(),tx_cache))
     for i in tx_hash_list:
         app.tx_cache.pop(i)
     app.block_cache.pop(binary_block_hash)
