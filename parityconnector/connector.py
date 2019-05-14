@@ -265,7 +265,7 @@ class Connector:
                 return
             data = await self.rpc.eth_blockNumber()
             last_block_node = int(data,16)
-            if not self.last_block_height or last_block_node > self.last_block_height + 10000:
+            if not self.last_block_height or last_block_node > self.last_block_height + 1000:
                 try:
                     if self.block_sub:
                         await self.unsubscribe_blocks()
