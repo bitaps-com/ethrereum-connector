@@ -388,7 +388,6 @@ class Connector:
                         self.log.info('Orphan handler time [%s]' % round(time.time() - q, 4))
                         return
             if block_height > self.sync:
-                self.log.warning("else")
                 self.sync = block_height
                 self.sync_requested = False
             self.await_tx_list_check = []
@@ -592,11 +591,13 @@ class Connector:
                     self.log.info("unconfirmed tx %s last block %s" %(count, height))
                     self.log.info('tx cache len %s' % (self.tx_cache.len()))
                     self.log.info('pending cache len %s' % (self.pending_cache.len()))
-                    expired_hash_list=clear_expired_tx(self)
+                    expired_hash_list=get_expired_tx(self)
                     self.log.info('expired tx len %s' % (len(expired_hash_list)))
                     if expired_hash_list:
                         if self.expired_tx_handler:
                             await self.expired_tx_handler(expired_hash_list)
+                        if expired_hash_list:
+                            [self.pending_cache.pop(tx_hash) for tx_hash in expired_hash_list]
                     await self.get_last_block()
             except asyncio.CancelledError:
                 self.log.debug("watchdog terminated")
