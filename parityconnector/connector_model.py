@@ -106,9 +106,9 @@ def block_hash_by_height(app,block_height):
 
 
 
-def get_expired_tx(app,unconfirmed_exp = 12):
+def get_expired_tx(app,expired_time):
         expired_hash_list=[]
-        expired_timestamp=int(time.time()) - 60*60*unconfirmed_exp
+        expired_timestamp=int(time.time()) - expired_time
         for i in app.pending_cache._store:
             if app.pending_cache._store[i][1] <= expired_timestamp:
                 expired_hash_list.append(i)

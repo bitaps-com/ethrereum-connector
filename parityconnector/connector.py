@@ -34,6 +34,7 @@ class Connector:
                  rpc_threads_limit=100,
                  rpc_timeout=60,
                  block_timeout=120,
+                 expired_time=43200, #12 hours
                  preload=False):
         self.loop = loop
         self.log = logger
@@ -72,7 +73,7 @@ class Connector:
         self.tx_sub = False
         self.block_sub = False
         self.connected = asyncio.Future()
-
+        self.expired_time=expired_time
         self.preload = preload
         self.block_preload = Cache(max_size=50000)
         self.tx_cache = tx_cache
@@ -591,7 +592,7 @@ class Connector:
                     self.log.info("unconfirmed tx %s last block %s" %(count, height))
                     self.log.info('tx cache len %s' % (self.tx_cache.len()))
                     self.log.info('pending cache len %s' % (self.pending_cache.len()))
-                    expired_hash_list=get_expired_tx(self)
+                    expired_hash_list=get_expired_tx(self,self.expired_time)
                     self.log.info('expired tx len %s' % (len(expired_hash_list)))
                     if expired_hash_list:
                         if self.expired_tx_handler:
