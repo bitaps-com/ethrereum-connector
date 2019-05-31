@@ -114,10 +114,10 @@ class Connector:
         self.websocket = self.loop.create_task(self.websocket_client())
         self._watchdog = self.loop.create_task(self.watchdog())
         if self.preload:
-            n=2
-            for i in range(2):
-                self.loop.create_task(self.preload_block(i,n,40000))
-        await asyncio.sleep(0.1)
+            n=3
+            for i in range(n):
+                self.loop.create_task(self.preload_block(i,n,30000))
+        await asyncio.sleep(0.5)
         self.loop.create_task(self.get_last_block())
 
 
@@ -303,7 +303,7 @@ class Connector:
                 if self.last_block_height:
                     last_block=self.last_block_height
                     if not self.last_preload_block_height:
-                        start_height = last_block+ 10000+ i*blocks
+                        start_height = last_block+ (i+1)*blocks
                     else:
                         if last_block+ n*blocks<self.last_preload_block_height:
                             continue
@@ -311,7 +311,7 @@ class Connector:
                             start_height=self.last_preload_block_height+i*blocks
                     data = await self.rpc.eth_blockNumber()
                     last_block_node = int(data, 16)
-                    if last_block_node > start_height + 10000:
+                    if last_block_node > start_height + blocks:
                         preload_height=start_height
                         while True:
                             if not self.active:
