@@ -75,7 +75,7 @@ class Connector:
         self.connected = asyncio.Future()
         self.expired_time=expired_time
         self.preload = preload
-        self.block_preload = Cache(max_size=100000)
+        self.block_preload = Cache(max_size=150000)
         self.tx_cache = tx_cache
         self.pending_cache = pending_cache
         self.block_cache = block_cache
@@ -114,7 +114,7 @@ class Connector:
         self.websocket = self.loop.create_task(self.websocket_client())
         self._watchdog = self.loop.create_task(self.watchdog())
         if self.preload:
-            n=2
+            n=3
             for i in range(n):
                 self.loop.create_task(self.preload_block(i,n,30000))
         await asyncio.sleep(0.5)
