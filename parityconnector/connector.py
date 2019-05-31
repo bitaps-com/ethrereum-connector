@@ -114,7 +114,7 @@ class Connector:
         self.websocket = self.loop.create_task(self.websocket_client())
         self._watchdog = self.loop.create_task(self.watchdog())
         if self.preload:
-            n=3
+            n=2
             for i in range(n):
                 self.loop.create_task(self.preload_block(i,n,30000))
         await asyncio.sleep(0.5)
@@ -303,7 +303,7 @@ class Connector:
                 if self.last_block_height:
                     last_block=self.last_block_height
                     if not self.last_preload_block_height:
-                        start_height = last_block+ (i+1)*blocks
+                        start_height = last_block+ 1000+i*blocks
                     else:
                         if last_block+ n*blocks<self.last_preload_block_height:
                             continue
