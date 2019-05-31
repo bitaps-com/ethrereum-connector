@@ -75,7 +75,7 @@ class Connector:
         self.connected = asyncio.Future()
         self.expired_time=expired_time
         self.preload = preload
-        self.block_preload = Cache(max_size=100000)
+        self.block_preload = Cache(max_size=150000)
         self.tx_cache = tx_cache
         self.pending_cache = pending_cache
         self.block_cache = block_cache
@@ -303,7 +303,7 @@ class Connector:
                 if self.last_block_height:
                     last_block=self.last_block_height
 
-                    if last_block + n * blocks > self.last_preload_block_height:
+                    if last_block + (n-i) * blocks > self.last_preload_block_height:
                         if not self.last_preload_block_height:
                             start_height = last_block+ 1000+i*blocks
                         else:
