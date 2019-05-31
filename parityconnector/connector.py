@@ -114,7 +114,7 @@ class Connector:
         self.websocket = self.loop.create_task(self.websocket_client())
         self._watchdog = self.loop.create_task(self.watchdog())
         if self.preload:
-            n=2
+            n=3
             for i in range(n):
                 self.loop.create_task(self.preload_block(i,n,30000))
         await asyncio.sleep(0.5)
@@ -302,39 +302,38 @@ class Connector:
             try:
                 if self.last_block_height:
                     last_block=self.last_block_height
-                    if not self.last_preload_block_height:
-                        start_height = last_block+ 1000+i*blocks
-                    else:
-                        if last_block+ n*blocks<self.last_preload_block_height:
-                            continue
+
+                    if last_block + n * blocks > self.last_preload_block_height:
+                        if not self.last_preload_block_height:
+                            start_height = last_block+ 1000+i*blocks
                         else:
                             start_height=self.last_preload_block_height+i*blocks
-                    data = await self.rpc.eth_blockNumber()
-                    last_block_node = int(data, 16)
-                    if last_block_node > start_height + blocks:
-                        preload_height=start_height
-                        while True:
-                            if not self.active:
-                                 raise asyncio.CancelledError
-                            if start_height+blocks < preload_height:
-                                break
-                            ex = self.block_preload.get(preload_height)
-                            if not ex:
-                                self.log.debug('preload block height %s' % preload_height)
-                                block=await self.get_block_by_height(preload_height)
-                                if block:
-                                    self.block_preload.set(preload_height, block)
+                        data = await self.rpc.eth_blockNumber()
+                        last_block_node = int(data, 16)
+                        if last_block_node > start_height + blocks:
+                            preload_height=start_height
+                            while True:
+                                if not self.active:
+                                     raise asyncio.CancelledError
+                                if start_height+blocks < preload_height:
+                                    break
+                                ex = self.block_preload.get(preload_height)
+                                if not ex:
+                                    self.log.debug('preload block height %s' % preload_height)
+                                    block=await self.get_block_by_height(preload_height)
+                                    if block:
+                                        self.block_preload.set(preload_height, block)
+                                        preload_height += 1
+                                else:
                                     preload_height += 1
-                            else:
-                                preload_height += 1
-                            if preload_height>self.last_preload_block_height:
-                                self.last_preload_block_height=preload_height
+                                if preload_height>self.last_preload_block_height:
+                                    self.last_preload_block_height=preload_height
             except asyncio.CancelledError:
                 self.log.info("connector preload_block terminated")
                 break
             except:
                 self.log.error(str(traceback.format_exc()))
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(10)
 
 
     async def _new_block(self, block):
