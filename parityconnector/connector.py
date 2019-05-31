@@ -466,7 +466,7 @@ class Connector:
         block_preload_cache = self.block_preload.get(next_block_height)
         if block_preload_cache:
             self.block_preload.pop(next_block_height)
-            self.log.debug('get block %s from cashe' %next_block_height)
+            self.log.debug('get block %s from cache' %next_block_height)
             self.loop.create_task(self._new_block(block_preload_cache))
         else:
             block=await self.get_block_by_height(next_block_height)
