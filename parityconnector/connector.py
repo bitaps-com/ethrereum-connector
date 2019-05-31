@@ -81,7 +81,7 @@ class Connector:
         self.block_cache = block_cache
         self.last_inserted_block = [0, 0]
         self.last_block_height = None
-        self.last_preload_block_height=None
+        self.last_preload_block_height=0
         self.add_tx_future = dict()
         self.tx_batch_active = False
         self.rpc_batch_limit = rpc_batch_limit
@@ -302,10 +302,10 @@ class Connector:
             try:
                 if self.last_block_height:
                     last_block=self.last_block_height
-                    if not last_block:
+                    if not self.last_preload_block_height:
                         start_height = last_block+ 10000+ i*blocks
                     else:
-                        if last_block+ n*blocks<=self.last_preload_block_height:
+                        if last_block+ n*blocks<self.last_preload_block_height:
                             continue
                         else:
                             start_height=self.last_preload_block_height+i*blocks
