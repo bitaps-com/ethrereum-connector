@@ -304,7 +304,7 @@ class Connector:
                 if self.last_block_height:
                     last_block=self.last_block_height
 
-                    if last_block + (n-1)*blocks > self.last_preload_block_height:
+                    if last_block + n*blocks > self.last_preload_block_height:
                         if not self.last_preload_block_height:
                             start_height = last_block+ 1000
                         else:
