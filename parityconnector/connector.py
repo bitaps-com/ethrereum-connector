@@ -300,22 +300,24 @@ class Connector:
     async def preload_block(self,i,n,blocks):
         while True:
             try:
+                await asyncio.sleep(i)
                 if self.last_block_height:
                     last_block=self.last_block_height
 
-                    if last_block + (n-i) * blocks > self.last_preload_block_height:
+                    if last_block + n*blocks > self.last_preload_block_height:
                         if not self.last_preload_block_height:
-                            start_height = last_block+ 1000+i*blocks
+                            start_height = last_block+ 1000
                         else:
-                            start_height=self.last_preload_block_height+i*blocks
+                            start_height=self.last_preload_block_height
                         data = await self.rpc.eth_blockNumber()
                         last_block_node = int(data, 16)
                         if last_block_node > start_height + blocks:
                             preload_height=start_height
+                            self.last_preload_block_height=start_height+blocks
                             while True:
                                 if not self.active:
                                      raise asyncio.CancelledError
-                                if start_height+blocks < preload_height:
+                                if start_height+blocks <= preload_height:
                                     break
                                 ex = self.block_preload.get(preload_height)
                                 if not ex:
@@ -326,8 +328,6 @@ class Connector:
                                         preload_height += 1
                                 else:
                                     preload_height += 1
-                                if preload_height>self.last_preload_block_height:
-                                    self.last_preload_block_height=preload_height
             except asyncio.CancelledError:
                 self.log.info("connector preload_block terminated")
                 break
