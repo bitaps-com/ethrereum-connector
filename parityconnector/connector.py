@@ -35,7 +35,9 @@ class Connector:
                  rpc_timeout=60,
                  block_timeout=120,
                  expired_time=43200, #12 hours
-                 preload=False):
+                 preload=False,
+                 preload_workers=5,
+                 preload_qty_for_task=20000):
         self.loop = loop
         self.log = logger
         self.rpc_timeout = rpc_timeout
@@ -82,6 +84,8 @@ class Connector:
         self.last_inserted_block = [0, 0]
         self.last_block_height = None
         self.last_preload_block_height=0
+        self.preload_workers = preload_workers
+        self.preload_qty_for_task = preload_qty_for_task
         self.add_tx_future = dict()
         self.tx_batch_active = False
         self.rpc_batch_limit = rpc_batch_limit
@@ -114,9 +118,8 @@ class Connector:
         self.websocket = self.loop.create_task(self.websocket_client())
         self._watchdog = self.loop.create_task(self.watchdog())
         if self.preload:
-            n=5
-            for i in range(n):
-                self.loop.create_task(self.preload_block(i,n,20000))
+            for i in range(self.preload_workers):
+                self.loop.create_task(self.preload_block(i,self.preload_workers,self.preload_qty_for_task))
         await asyncio.sleep(0.5)
         self.loop.create_task(self.get_last_block())
 
