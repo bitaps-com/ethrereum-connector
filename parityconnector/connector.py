@@ -320,6 +320,8 @@ class Connector:
                             while True:
                                 if not self.active:
                                      raise asyncio.CancelledError
+                                if self.last_block_height+10>=preload_height:
+                                    preload_height += 100
                                 if start_height+blocks <= preload_height:
                                     break
                                 ex = self.block_preload.get(preload_height)
