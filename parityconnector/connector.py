@@ -22,6 +22,7 @@ class Connector:
                  tx_cache = Cache(max_size=50000),
                  pending_cache=Cache(max_size=100000),
                  block_cache = Cache(max_size=10000),
+                 block_preload = Cache(max_size=150000),
                  cache_update=None,
                  start_block=None,
                  tx_handler=None,
@@ -77,7 +78,7 @@ class Connector:
         self.connected = asyncio.Future()
         self.expired_time=expired_time
         self.preload = preload
-        self.block_preload = Cache(max_size=150000)
+        self.block_preload = block_preload
         self.tx_cache = tx_cache
         self.pending_cache = pending_cache
         self.block_cache = block_cache
@@ -608,6 +609,7 @@ class Connector:
                     self.log.info("unconfirmed tx %s last block %s" %(count, height))
                     self.log.info('tx cache len %s' % (self.tx_cache.len()))
                     self.log.info('pending cache len %s' % (self.pending_cache.len()))
+                    self.log.info('block preload len %s' % (self.block_preload.len()))
                     expired_hash_list=get_expired_tx(self,self.expired_time)
                     self.log.info('expired tx len %s' % (len(expired_hash_list)))
                     if expired_hash_list:
