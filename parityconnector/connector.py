@@ -161,6 +161,7 @@ class Connector:
                                     self.loop.create_task(tx_task)
                                 if data["params"]["subscription"] == self.block_sub:
                                     block_task = self._new_block(data["params"]["result"])
+                                    self.log.warning('new block subscription info %s' %data["params"]["result"]['number'])
                                     self.loop.create_task(block_task)
                         except Exception as err:
                             self.log.error("error>: %s" % str(err))
@@ -297,6 +298,7 @@ class Connector:
                 block=await self.get_block_by_height(last_block_node)
                 if block:
                     self.loop.create_task(self._new_block(block))
+                    self.log.warning('new block watchdog info %s' % data["params"]["result"]['number'])
         except Exception as err:
             self.log.error(str(traceback.format_exc()))
             self.log.error("Get last block by height")
