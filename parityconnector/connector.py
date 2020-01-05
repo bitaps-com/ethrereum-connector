@@ -298,7 +298,7 @@ class Connector:
                 block=await self.get_block_by_height(last_block_node)
                 if block:
                     self.loop.create_task(self._new_block(block))
-                    self.log.warning('new block watchdog info %s' % data["params"]["result"]['number'])
+                    self.log.warning('new block watchdog info %s' % block['number'])
         except Exception as err:
             self.log.error(str(traceback.format_exc()))
             self.log.error("Get last block by height")
@@ -406,6 +406,9 @@ class Connector:
                         self.last_block_height-=1
                         next_block_height = self.last_block_height + 1
                         self.log.info('Orphan handler time [%s]' % round(time.time() - q, 4))
+                        self.log.info('await_tx_list %s' %self.await_tx_list)
+                        self.log.info('await_tx_list_check %s' %self.await_tx_list_check)
+                        self.block_txs_request.cancel()
                         return
             if block_height > self.sync:
                 self.sync = block_height
