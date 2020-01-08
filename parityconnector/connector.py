@@ -235,6 +235,8 @@ class Connector:
                             except:
                                 if tx:
                                     raise
+                                elif tx_hash in self.await_tx_list:
+                                    raise
                                 else:
                                     self.log.debug("None tx data %s" % (tx_hash))
                                     return
