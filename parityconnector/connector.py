@@ -228,6 +228,7 @@ class Connector:
                                 await self.pending_tx_update_handler(binary_tx_hash, last_seen_timestamp)
                             return
                     else:
+                        self.log.warning('no pending tx hash %s' % tx_hash)
                         if tx is None:
                             try:
                                 tx = await self.rpc.eth_getTransactionByHash(tx_hash)
@@ -250,6 +251,7 @@ class Connector:
                         tx_cache = (block_height, int(time.time()))
                         self.pending_cache.set(binary_tx_hash, tx_cache)
                     else:
+                        self.log.warning('handler block tx hash %s' % tx_hash)
                         tx_cache=(block_height,block_time)
                         self.tx_cache.set(binary_tx_hash, tx_cache)
                         self.pending_cache.pop(binary_tx_hash)
@@ -466,6 +468,7 @@ class Connector:
             tx_list = [tx["hash"] for tx in transactions]
             self.await_tx_list = list(tx_list)
             for tx in transactions:
+                self.log.warning('create block task to tx %s' %tx["hash"])
                 self.loop.create_task(self._new_transaction(tx["hash"], tx=tx, block_height=block_height,block_time=block_time))
             await asyncio.wait_for(self.block_txs_request, timeout=self.block_timeout)
             return tx_list, transactions
