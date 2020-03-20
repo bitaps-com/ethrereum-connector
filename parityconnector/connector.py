@@ -554,7 +554,10 @@ class Connector:
             for tx in block_receipt:
                 if not tx['transactionHash'] in receipt:
                     receipt[tx['transactionHash']] = {}
-                receipt[tx['transactionHash']]['status'] = tx['status']
+                if 'status' in tx:
+                    receipt[tx['transactionHash']]['status'] = tx['status']
+                else:
+                    receipt[tx['transactionHash']]['status'] = '0x1'
                 receipt[tx['transactionHash']]['logs'] = tx['logs']
                 receipt[tx['transactionHash']]['gasUsed']=tx['gasUsed']
             for tx in transactions:
