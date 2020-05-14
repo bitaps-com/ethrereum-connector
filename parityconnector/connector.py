@@ -38,7 +38,8 @@ class Connector:
                  expired_time=43200, #12 hours
                  preload=False,
                  preload_workers=5,
-                 preload_qty_for_task=20000):
+                 preload_qty_for_task=20000,
+                 rollback_block=None):
         self.loop = loop
         self.log = logger
         self.rpc_timeout = rpc_timeout
@@ -87,6 +88,7 @@ class Connector:
         self.last_preload_block_height=0
         self.preload_workers = preload_workers
         self.preload_qty_for_task = preload_qty_for_task
+        self.rollback_block=rollback_block
         self.add_tx_future = dict()
         self.tx_batch_active = False
         self.rpc_batch_limit = rpc_batch_limit
@@ -394,7 +396,8 @@ class Connector:
                      next_block_height = self.last_block_height + 1
                      return
                 if self.last_block_height + 1 == block_height:
-                    if parent_exist is None:
+                    if parent_exist is None or (self.rollback_block and self.last_block_height>=self.rollback_block):
+
                         q = time.time()
                         orphan_block_height=self.last_block_height
                         # if self.tx_cache.len() < 5000 or self.block_cache.len()<50:
