@@ -203,11 +203,14 @@ class Connector:
     async def _new_transaction(self, tx_hash, tx = None,block_height = -1,block_time = None):
             binary_tx_hash=unhexlify(tx_hash[2:])
             if tx_hash in self.tx_in_process:
+                self.log.warning('in_process tx hash %s' % tx_hash)
                 return
             self.tx_in_process.add(tx_hash)
+            self.log.warning('add in_process tx hash %s' % tx_hash)
             try:
                 tx_cache = self.tx_cache.get(binary_tx_hash)
                 if tx_cache:
+                    self.log.warning('tx_cache tx hash %s' % tx_hash)
                     tx_height,last_timestamp =tx_cache
                     if tx_height==block_height:
                         # if transaction in block
@@ -220,6 +223,7 @@ class Connector:
                 else:
                     tx_cache = self.pending_cache.get(binary_tx_hash)
                     if tx_cache:
+                        self.log.warning('pending_cache tx hash %s' % tx_hash)
                         if block_height==-1:
                             last_seen_timestamp = int(time.time())
                             upd_tx_cache=(-1, last_seen_timestamp)
@@ -244,6 +248,7 @@ class Connector:
 
                         # call external handler
                         if self.tx_handler:
+                            self.log.warning('tx_handler tx hash %s' % tx_hash)
                             handler_result=await self.tx_handler(tx,block_height, block_time)
                             if handler_result != 0 and handler_result != 1:
                                 raise Exception('tx handler error')
