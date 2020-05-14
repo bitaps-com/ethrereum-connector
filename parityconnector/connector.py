@@ -212,6 +212,7 @@ class Connector:
                 if tx_cache:
                     self.log.warning('tx_cache tx hash %s' % tx_hash)
                     tx_height,last_timestamp =tx_cache
+                    self.log.warning('tx_height %s tx hash %s' % (tx_height,tx_hash))
                     if tx_height==block_height:
                         # if transaction in block
                         if tx_hash in self.await_tx_list:
