@@ -205,8 +205,9 @@ class Connector:
     async def _new_transaction(self, tx_hash, tx = None,block_height = -1,block_time = None):
             binary_tx_hash=unhexlify(tx_hash[2:])
             if tx_hash in self.tx_in_process:
-                self.log.warning('already in process tx hash %s' % tx_hash)
+                self.log.warning('already in process tx hash %s  block_height %s' % (tx_hash,block_height))
                 return
+            self.log.warning('start process tx hash %s block_height %s' % (tx_hash,block_height))
             self.tx_in_process.add(tx_hash)
             try:
                 tx_cache = self.tx_cache.get(binary_tx_hash)
