@@ -205,8 +205,14 @@ class Connector:
     async def _new_transaction(self, tx_hash, tx = None,block_height = -1,block_time = None):
             binary_tx_hash=unhexlify(tx_hash[2:])
             if tx_hash in self.tx_in_process:
-                self.log.warning('already in process tx hash %s  block_height %s' % (tx_hash,block_height))
-                return
+                if block_height==-1:
+                    return
+                else:
+                    while True:
+                        self.log.warning('already in process tx hash %s  block_height %s' % (tx_hash, block_height))
+                        await asyncio.sleep(2)
+                        if tx_hash not in self.tx_in_process:
+                            break
             self.log.warning('start process tx hash %s block_height %s' % (tx_hash,block_height))
             self.tx_in_process.add(tx_hash)
             try:
