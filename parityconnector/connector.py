@@ -400,7 +400,7 @@ class Connector:
                      next_block_height = self.last_block_height + 1
                      return
                 if self.last_block_height + 1 == block_height:
-                    if parent_exist is None or block_height>=10061440:
+                    if parent_exist is None:
                         q = time.time()
                         orphan_block_height=self.last_block_height
                         # if self.tx_cache.len() < 5000 or self.block_cache.len()<50:
