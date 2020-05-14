@@ -205,13 +205,14 @@ class Connector:
     async def _new_transaction(self, tx_hash, tx = None,block_height = -1,block_time = None):
             binary_tx_hash=unhexlify(tx_hash[2:])
             if tx_hash in self.tx_in_process:
+                self.log.warning('already in process tx hash %s' % tx_hash)
                 return
             self.tx_in_process.add(tx_hash)
             try:
                 tx_cache = self.tx_cache.get(binary_tx_hash)
                 if tx_cache:
                     tx_height,last_timestamp =tx_cache
-                    self.log.debug('tx_cache tx_height %s tx hash %s' % (tx_height,tx_hash))
+                    self.log.warning('tx_cache tx_height %s tx hash %s' % (tx_height,tx_hash))
                     if tx_height==block_height:
                         # if transaction in block
                         if tx_hash in self.await_tx_list:
@@ -231,11 +232,12 @@ class Connector:
                                 await self.pending_tx_update_handler(binary_tx_hash, last_seen_timestamp)
                             return
                     else:
-                        self.log.debug('no pending tx hash %s' % tx_hash)
+                        self.log.warning('no pending tx hash %s' % tx_hash)
                         if tx is None:
                             try:
                                 tx = await self.rpc.eth_getTransactionByHash(tx_hash)
                                 if not(tx_hash == tx["hash"]): raise Exception
+                                self.log.warning('received from node tx hash %s' % tx_hash)
                             except:
                                 if tx:
                                     raise
