@@ -235,6 +235,7 @@ class Connector:
                         self.log.warning('no pending tx hash %s' % tx_hash)
                         if tx is None:
                             try:
+                                self.log.warning('get from node tx hash %s' % tx_hash)
                                 tx = await self.rpc.eth_getTransactionByHash(tx_hash)
                                 if not(tx_hash == tx["hash"]): raise Exception
                                 self.log.warning('received from node tx hash %s' % tx_hash)
@@ -249,9 +250,11 @@ class Connector:
 
                         # call external handler
                         if self.tx_handler:
+                            self.log.warning('start handler tx hash %s' % tx_hash)
                             handler_result=await self.tx_handler(tx,block_height, block_time)
                             if handler_result != 0 and handler_result != 1:
                                 raise Exception('tx handler error')
+                            self.log.warning('finish handler tx hash %s' % tx_hash)
                     if block_height==-1:
                         tx_cache = (block_height, int(time.time()))
                         self.pending_cache.set(binary_tx_hash, tx_cache)
