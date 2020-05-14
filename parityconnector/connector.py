@@ -418,7 +418,6 @@ class Connector:
                         self.log.info('Orphan handler time [%s]' % round(time.time() - q, 4))
                         self.log.info('await_tx_list %s' %self.await_tx_list)
                         self.log.info('await_tx_list_check %s' %self.await_tx_list_check)
-                        self.block_txs_request.cancel()
                         return
             if block_height > self.sync:
                 self.sync = block_height
