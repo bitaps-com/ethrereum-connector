@@ -209,17 +209,14 @@ class Connector:
                     return
                 else:
                     while True:
-                        self.log.warning('already in process tx hash %s  block_height %s' % (tx_hash, block_height))
                         await asyncio.sleep(2)
                         if tx_hash not in self.tx_in_process:
                             break
-            self.log.warning('start process tx hash %s block_height %s' % (tx_hash,block_height))
             self.tx_in_process.add(tx_hash)
             try:
                 tx_cache = self.tx_cache.get(binary_tx_hash)
                 if tx_cache:
                     tx_height,last_timestamp =tx_cache
-                    self.log.warning('tx_cache tx_height %s tx hash %s' % (tx_height,tx_hash))
                     if tx_height==block_height:
                         # if transaction in block
                         if tx_hash in self.await_tx_list:
@@ -239,13 +236,10 @@ class Connector:
                                 await self.pending_tx_update_handler(binary_tx_hash, last_seen_timestamp)
                             return
                     else:
-                        self.log.warning('no pending tx hash %s' % tx_hash)
                         if tx is None:
                             try:
-                                self.log.warning('get from node tx hash %s' % tx_hash)
                                 tx = await self.rpc.eth_getTransactionByHash(tx_hash)
                                 if not(tx_hash == tx["hash"]): raise Exception
-                                self.log.warning('received from node tx hash %s' % tx_hash)
                             except:
                                 if tx:
                                     raise
@@ -257,11 +251,9 @@ class Connector:
 
                         # call external handler
                         if self.tx_handler:
-                            self.log.warning('start handler tx hash %s' % tx_hash)
                             handler_result=await self.tx_handler(tx,block_height, block_time)
                             if handler_result != 0 and handler_result != 1:
                                 raise Exception('tx handler error')
-                            self.log.warning('finish handler tx hash %s' % tx_hash)
                     if block_height==-1:
                         tx_cache = (block_height, int(time.time()))
                         self.pending_cache.set(binary_tx_hash, tx_cache)
