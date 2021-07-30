@@ -567,6 +567,7 @@ class Connector:
                     receipt[tx['transactionHash']]['status'] = '0x1'
                 receipt[tx['transactionHash']]['logs'] = tx['logs']
                 receipt[tx['transactionHash']]['gasUsed']=tx['gasUsed']
+                receipt[tx['transactionHash']]['effectiveGasPrice']=tx['effectiveGasPrice']
             for tx in transactions:
                 if receipt[tx['hash']]['status'] == '0x0':
                     tx['status'] = 0
@@ -574,6 +575,7 @@ class Connector:
                     tx['status'] = 1
                 tx['logs'] = receipt[tx['hash']]['logs']
                 tx['gasUsed'] = receipt[tx['hash']]['gasUsed']
+                tx['effectiveGasPrice'] = receipt[tx['hash']]['effectiveGasPrice']
                 if tx['hash'] in trace_tx:
                     if 'result' in tx:
                         tx['result'] = trace_tx[tx['hash']][0]['result']
