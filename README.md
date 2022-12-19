@@ -1,6 +1,6 @@
-# Parity connector
+# Ethereum connector
 
-Connector to parity ethereum node, providing ability to monitoring ethereum network events. Built-in synchronization algorithm.
+Connector to ethereum node, providing ability to monitoring ethereum network events. Built-in synchronization algorithm.
 
 What is a Ethereum node connector?
 
