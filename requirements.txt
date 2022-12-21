@@ -1,5 +1,4 @@
-aiohttp
+aiohttp==3.7.4
 asyncpg
-python-json-logger
 colorlog
 https://github.com/bitaps-com/aiojsonrpc

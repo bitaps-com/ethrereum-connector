@@ -1,0 +1,15 @@
+[POSTGRESQL]
+
+dsn = postgres://test:test@127.0.0.1:5432/test
+pool_threads = 40
+
+[NODE]
+
+client = nethermind
+rpc_url = http://rpc.ethereum-testnet-sepolia.bitaps.dev
+ws_url = ws://rpc.ethereum-testnet-sepolia.bitaps.dev
+
+[LOG]
+
+log_level = debug
+
