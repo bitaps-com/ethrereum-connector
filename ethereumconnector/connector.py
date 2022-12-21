@@ -149,17 +149,6 @@ class Connector:
         tx_timestamp = int(time.time())
         self.tx_in_process.add(tx_hash)
         try:
-            # tx_cache = self.confirmed_tx_cache.get(bin_tx_hash)
-            # if tx_cache:
-            #     tx_height, last_timestamp = tx_cache
-            #     # transaction already exists
-            #     if tx_height == block_height:
-            #         if tx_hash in self.active_block_await_tx_list:
-            #             self.active_block_await_tx_list.remove(tx_hash)
-            #             if not self.active_block_await_tx_list:
-            #                self.active_block_txs.set_result(True)
-            #     return
-            # else:
             tx_cache = self.pending_tx_cache.get(bin_tx_hash)
             if tx_cache:
                 # pending transaction is rebroadcasted
