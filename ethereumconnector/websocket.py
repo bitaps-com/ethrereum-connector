@@ -1,0 +1,74 @@
+import aiohttp
+import json
+import asyncio
+import traceback
+
+async def client(app):
+    while True:
+        try:
+            tcp_connector = aiohttp.TCPConnector(verify_ssl=False)
+            session = aiohttp.ClientSession(connector=tcp_connector)
+            app.ws = await session.ws_connect(app.socket_url, autoclose=True, autoping=True)
+            app.connected.set_result(True)
+            app.log.info('websocket connected')
+            if app.tx_subscription_id: await unsubscribe_blocks(app)
+            if app.block_subscription_id: await unsubscribe_transactions(app)
+            while True:
+                msg = await app.ws.receive()
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    try:
+                        data = json.loads(msg.data)
+                    except ValueError:
+                        app.log.warning("Can't parse data")
+                        continue
+                    try:
+                        if "id" in data:
+                            if data["id"] == 1:
+                                app.block_subscription_id = data["result"]
+                                app.log.info("Blocks subscription %s" % data["result"])
+                            elif data["id"] == 2:
+                                app.tx_subscription_id = data["result"]
+                                app.log.info("Transactions subscription %s" % data["result"])
+                        if "method" in data:
+                            if data["params"]["subscription"] == app.tx_subscription_id:
+                                tx_task = app.new_transaction(data["params"]["result"])
+                                app.log.debug("websocket new transaction %s" %data["params"]["result"])
+                                app.loop.create_task(tx_task)
+                            if data["params"]["subscription"] == app.block_subscription_id:
+                                block_task = app.new_block(data["params"]["result"])
+                                app.log.debug("websocket new block %s" %int(data["params"]["result"]["number"],16))
+                                app.loop.create_task(block_task)
+                    except Exception as err:
+                        app.log.error("error>: %s" % str(err))
+                        app.log.error(traceback.format_exc())
+                elif msg.type in (aiohttp.WSMsgType.ERROR, aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED):
+                    app.log.error("websocket error %s" % msg.type.name)
+                    app.connected = asyncio.Future()
+                    break
+        except asyncio.CancelledError:
+            await app.ws.close()
+            app.log.info("websocket disconnected")
+            app.connected = asyncio.Future()
+            break
+        except Exception as err:
+            app.log.error("websocket error %s" % err)
+            app.log.error(str(traceback.format_exc()))
+            app.connected.cancel()
+            app.connected = asyncio.Future()
+        finally:
+            await session.close()
+        await asyncio.sleep(1)
+
+async def subscribe_blocks(app):
+    await app.ws.send_str('{"jsonrpc":"2.0", "id": 1, "method":"eth_subscribe", "params": ["newHeads"]}')
+
+async def unsubscribe_blocks(app):
+    await app.ws.send_str('{"jsonrpc":"2.0","id": 3, "method":"eth_unsubscribe", "params": ["%s"]}' % app.block_subscription_id)
+    app.log.info("Blocks subscription canceled")
+
+async def subscribe_transactions(app):
+    await app.ws.send_str('{"jsonrpc":"2.0","id": 2, "method": "eth_subscribe", "params": ["newPendingTransactions"]}')
+
+async def unsubscribe_transactions(app):
+    await app.ws.send_str('{"jsonrpc":"2.0","id": 4, "method": "eth_unsubscribe", "params": ["%s"]}' % app.tx_subscription_id)
+    app.log.info("Transactions subscription canceled")

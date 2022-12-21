@@ -7,9 +7,9 @@ import logging
 import colorlog
 import sys
 import configparser
-import parityconnector
 import signal
 import traceback
+import ethereumconnector
 
 
 class App:
@@ -17,11 +17,10 @@ class App:
         self.loop = loop
         self.log = logger
         self.connector = False
-        self.console = False
-        self.rpc_url = config["NODE_URL"]["url"]
-        self.trace_rpc_url = config["NODE_URL"]["url"]
-        self.socket_url = config["NODE_SOCKET"]["url"]
-        self.postgresql_dsn =config["POSTGRESQL"]["dsn"].replace(',',' ')
+        self.client = config["NODE"]["client"]
+        self.rpc_url = config["NODE"]["rpc_url"]
+        self.socket_url = config["NODE"]["ws_url"]
+        self.postgresql_dsn = config["POSTGRESQL"]["dsn"].replace(',',' ')
         self.log.info("Connector tester started")
         signal.signal(signal.SIGINT, self.terminate)
         signal.signal(signal.SIGTERM, self.terminate)
@@ -29,31 +28,36 @@ class App:
 
 
     async def start(self):
-        # init database
         try:
-            self.connector = parityconnector.Connector(
+            self.connector = ethereumconnector.Connector(
                 loop, self.log,
-                self.rpc_url,self.trace_rpc_url,
+                self.rpc_url,
                 self.socket_url,
-                self.postgresql_dsn,
+                self.client,
+                trace=True,
+                connector_db=True,  # use connector database
+                postgresql_dsn=self.postgresql_dsn,
+                start_block=0,  # start block height sync, if not specified - use current block
                 tx_handler=self.new_transaction_handler,
+                block_handler=self.new_block_handler,
                 orphan_handler=self.orphan_block_handler,
-                block_handler=self.new_block_handler,preload=True, start_block=0)
+                preload=True)
             await self.connector.connected
         except Exception as err:
             self.log.error("Start failed")
-            self.log.error(str(traceback.format_exc()))
+            self.loop.create_task(self.terminate_coroutine())
 
 
-    async def orphan_block_handler(self, orphan_height, orphan_hash, conn):
+
+    async def orphan_block_handler(self, orphan_block_height, orphan_bin_block_hash, **kwargs):
         pass
 
 
-    async def new_block_handler(self, block, conn):
+    async def new_block_handler(self, block, **kwargs):
         pass
 
 
-    async def new_transaction_handler(self, data,block_height, block_time):
+    async def new_transaction_handler(self, tx, **kwargs):
         return 1
 
     def _exc(self, a, b, c):
@@ -65,47 +69,44 @@ class App:
 
     async def terminate_coroutine(self):
         sys.excepthook = self._exc
-        self.log.info('Stop request received')
-        if self.connector:
+        if self.connector.active:
             await self.connector.stop()
         self.loop.stop()
         await asyncio.sleep(1)
         self.loop.close()
 
-def init(loop, argv):
-    config_file = "tester.cnf"
-    log_file = "tester.log"
-    log_level = logging.WARNING
-    logger = colorlog.getLogger('test')
+
+def init(loop):
+    config_file = "test.cnf"
     config = configparser.ConfigParser()
     config.read(config_file)
-    if log_level == logging.WARNING and "LOG" in config.sections():
-        if "log_level" in config['LOG']:
-            if config['LOG']["log_level"] == "info":
-                log_level = logging.INFO
-            elif config['LOG']["log_level"] == "debug":
-                log_level = logging.DEBUG
+    logger = colorlog.getLogger('test')
+    log_level = logging.WARNING
+    try:
+        if config['LOG']["log_level"] == "debug": log_level = logging.DEBUG
+        if config['LOG']["log_level"] == "info":log_level = logging.INFO
+        if config['LOG']["log_level"] == "warning": log_level = logging.WARNING
+        if config['LOG']["log_level"] == "error": log_level = logging.ERROR
+    except:
+        pass
     logger.setLevel(log_level)
-    fh = logging.FileHandler(log_file)
-    fh.setLevel(log_level)
     ch = logging.StreamHandler()
     ch.setLevel(log_level)
     formatter = colorlog.ColoredFormatter('%(log_color)s%(asctime)s %(levelname)s: %(message)s (%(module)s:%(lineno)d)')
-    fh.setFormatter(formatter)
     ch.setFormatter(formatter)
-    logger.addHandler(fh)
     logger.addHandler(ch)
     logger.info("Start")
-    loop = asyncio.get_event_loop()
-
     app = App(loop, logger, config)
     return app
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    app = init(loop, sys.argv[1:])
+    app = init(loop)
     loop.run_forever()
     pending = asyncio.Task.all_tasks()
-    loop.run_until_complete(asyncio.gather(*pending))
+    for task in pending:
+        task.cancel()
+    if pending:
+        loop.run_until_complete(asyncio.wait(pending))
     loop.close()
