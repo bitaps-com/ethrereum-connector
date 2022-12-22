@@ -11,7 +11,7 @@ def get_block_hash_by_height(app, block_height):
         index = list(app.block_cache._store.values()).index(block_height)
     except:
         index = -1
-    return list(app.block_cache_store.keys())[index] if index !=-1 else None
+    return list(app.block_cache._store.keys())[index] if index !=-1 else None
 
 def get_expired_tx(pending_tx_cache, expired_time):
     pendings_expired_hash_list = []
@@ -22,15 +22,13 @@ def get_expired_tx(pending_tx_cache, expired_time):
     return pendings_expired_hash_list
 
 def remove_orphan(app,block_height,bin_block_hash):
+    tx_hash_list = []
     for key, value in app.confirmed_tx_cache._store.items():
         if value[0]==block_height:
             tx_cache=(-1,value[1])
-            app.confirmed_tx_cache.pop(key)
+            tx_hash_list.append(key)
             app.pending_tx_cache.set(key, tx_cache)
+    for key in tx_hash_list:
+        app.confirmed_tx_cache.pop(key)
     app.block_cache.pop(bin_block_hash)
-
-
-
-
-
 

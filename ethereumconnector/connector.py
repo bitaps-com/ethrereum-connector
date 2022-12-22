@@ -220,7 +220,11 @@ class Connector:
                     next_block_height = self.last_block_height + 1
                     return
                 else: # self.last_block_height + 1 == block_height
-                    if parent_exist is None or (self.rollback_block and self.last_block_height>=self.rollback_block):
+                    if self.last_block_height == self.rollback_block:
+                        self.log.warning("connector stacked on rollback block %s" % self.rollback_block)
+                        next_block_height = None
+                        return
+                    if parent_exist is None or (self.rollback_block and self.last_block_height>self.rollback_block):
                         orphan_block_height=self.last_block_height
                         if self.confirmed_tx_cache.len() < DEFAULT_CONFIRMED_TX_CACHE_SIZE/10 or self.block_cache.len()<DEFAULT_BLOCK_CACHE_SIZE/10:
                             if self.connector_db:
