@@ -297,7 +297,8 @@ class Connector:
                             if not self.tx_subscription_id: await websocket.subscribe_transactions(self)
                         # 3 check last block
                         if self.node_last_block > self.last_block_height:
-                            block = await node.get_block_by_height(self, self.last_block_height+1)
+                            next_block_height = self.last_block_height+1 if self.last_block_height!=-1 else self.node_last_block
+                            block = await node.get_block_by_height(self, next_block_height)
                             if block:
                                 self.log.info('new block watchdog info %s' % int(block["number"], 16))
                                 self.loop.create_task(self.new_block(block))
