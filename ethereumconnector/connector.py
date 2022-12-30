@@ -101,16 +101,21 @@ class Connector:
                 try:
                     conn = await asyncpg.connect(dsn=self.postgresql_dsn)
                     await connector_db.init_db(self,conn)
+                    self.log.info("Wait cache loading ...")
                     await connector_db.cache_load_handler(self, conn)
                 finally:
                     if conn: await conn.close()
             else:
+                self.log.info("Wait cache loading ...")
                 self.confirmed_tx_cache,self.pending_tx_cache, self.block_cache = await self.cache_load_handler()
             if self.postgresql_dsn:
                 await connector_db.create_pool(self)
             self.last_block_height = connector_cache.get_last_block_height(self)
             self.rpc = aiojsonrpc.rpc(self.rpc_url, self.loop, timeout=self.rpc_timeout)
             await node.health_check(self)
+            node_client = await node.check_client(self)
+            if self.client not in node_client.lower():
+                raise Exception("Incorrect client")
         except Exception as err:
             self.log.error("Start failed")
             self.log.error(str(traceback.format_exc()))
@@ -200,7 +205,6 @@ class Connector:
         try:
             if block_exist is not None:
                 self.log.debug("block %s already exists %s" %(block_height,block["hash"]))
-                next_block_height = self.last_block_height + 1
                 return
             if bin_previousblock_hash is not None:
                 parent_exist = self.block_cache.get(bin_previousblock_hash)

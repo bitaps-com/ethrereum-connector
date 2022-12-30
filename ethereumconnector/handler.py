@@ -63,7 +63,7 @@ async def preload_blocks(app):
             break
         except:
             app.log.error(str(traceback.format_exc()))
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
 
 async def preload_blocks_worker(app, i, start_preload_block_height,stop_preload_block_height):
     preload_block_height = start_preload_block_height
