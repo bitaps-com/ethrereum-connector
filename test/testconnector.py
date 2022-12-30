@@ -104,7 +104,7 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     app = init(loop)
     loop.run_forever()
-    pending = asyncio.Task.all_tasks()
+    pending = asyncio.all_tasks()
     for task in pending:
         task.cancel()
     if pending:

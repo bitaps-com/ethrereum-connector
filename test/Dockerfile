@@ -1,10 +1,5 @@
-FROM ubuntu:18.04
-RUN apt-get update
-RUN apt-get -y install python3
-RUN apt-get -y install python3-pip
-RUN apt-get -y install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev
-RUN apt-get -y install libssl1.0-dev
-RUN apt-get -y install git
+FROM ubuntu:20.04
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install python3 python3-pip build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev git
 COPY requirements.txt .
 RUN pip3 install --requirement requirements.txt
 RUN mkdir /ethereumconnector

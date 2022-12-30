@@ -33,6 +33,14 @@ async def get_block_uncles(app, block_hash, index):
         app.log.error("Get uncle %s failed" % block_hash)
         raise
 
+async def get_transaction_receipt(app, tx_hash):
+    try:
+        return await app.rpc.eth_getTransactionReceipt(tx_hash)
+    except Exception:
+        app.log.error(str(traceback.format_exc()))
+        app.log.error("Get get_transaction_receipt %s failed" % tx_hash)
+        raise
+
 async def get_block_by_height(app, block_height):
     try:
         block = await app.rpc.eth_getBlockByNumber(hex(block_height), True)
@@ -56,16 +64,15 @@ async def get_block_by_height(app, block_height):
 
 async def get_block_trace_and_receipt(app, block_height, block_hash, transactions):
     if transactions:
-        trace_tx = {}
+        trace = {}
         if app.trace:
             block_trace = await app.rpc.trace_block(hex(block_height))
             if not (block_trace[0]['blockHash'] == block_hash):
                 raise Exception ('block trace hash %s block hash %s' %(block_trace[0]['blockHash'],block_hash))
             for tx in block_trace:
                 if 'author' in tx['action']:continue
-                if not tx['transactionHash'] in trace_tx:
-                    trace_tx[tx['transactionHash']] = list()
-                trace_tx[tx['transactionHash']].append(tx)
+                if not tx['transactionHash'] in trace: trace[tx['transactionHash']] = list()
+                trace[tx['transactionHash']].append(tx)
         receipt = {}
         if CLIENTS[app.client]["getBlockReceipts_method"]:
             func_name = CLIENTS[app.client]["getBlockReceipts_method"]
@@ -74,35 +81,22 @@ async def get_block_trace_and_receipt(app, block_height, block_hash, transaction
             if not (block_receipt[0]['blockHash'] == block_hash):
                 raise Exception('block receipt hash %s block hash %s' % (block_receipt[0]['blockHash'], block_hash))
         else:
-            block_receipt=[]
-            for tx in transactions:
-                tx_receipt = await app.rpc.eth_getTransactionReceipt(tx["hash"])
-                block_receipt.append(tx_receipt)
+            block_receipt = []
+            tx_receipt_tasks = [app.loop.create_task(get_transaction_receipt(app,tx["hash"])) for tx in transactions]
+            done, pending = await asyncio.wait(tx_receipt_tasks, return_when=asyncio.FIRST_EXCEPTION)
+            if pending: raise
+            for future in done: block_receipt.append(future.result())
         for tx in block_receipt:
-            if not tx['transactionHash'] in receipt:
-                receipt[tx['transactionHash']] = {}
-            if 'status' in tx:
-                receipt[tx['transactionHash']]['status'] = tx['status']
-            else:
-                receipt[tx['transactionHash']]['status'] = '0x1'
-            receipt[tx['transactionHash']]['logs'] = tx['logs']
-            receipt[tx['transactionHash']]['gasUsed']=tx['gasUsed']
-            receipt[tx['transactionHash']]['effectiveGasPrice']=tx['effectiveGasPrice']
+            if not tx['transactionHash'] in receipt:receipt[tx['transactionHash']] = {}
+            receipt[tx['transactionHash']] = tx
         for tx in transactions:
-            if receipt[tx['hash']]['status'] == '0x0':
-                tx['status'] = 0
-            else:
-                tx['status'] = 1
-            tx['logs'] = receipt[tx['hash']]['logs']
-            tx['gasUsed'] = receipt[tx['hash']]['gasUsed']
-            tx['effectiveGasPrice'] = receipt[tx['hash']]['effectiveGasPrice']
-            if tx['hash'] in trace_tx:
-                if 'result' in tx:
-                    tx['result'] = trace_tx[tx['hash']][0]['result']
-                else:
-                    tx['result']=None
-                tx['trace'] = trace_tx[tx['hash']]
-                if 'error' in trace_tx[tx['hash']][0]:
+            tx.update(receipt[tx['hash']])
+            tx['status']= int(tx['status'],16)
+            if tx['hash'] in trace:
+                tx['trace'] = trace[tx['hash']]
+                if 'error' in trace[tx['hash']][0]:
+                    if tx['status']==1:
+                        print("not normal tx",tx)
                     tx['status'] = 0
 
 
