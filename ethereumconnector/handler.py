@@ -48,16 +48,17 @@ async def block(app, block, **kwargs):
 async def preload_blocks(app):
     while True:
         try:
-            start_preload_block_height= max(app.last_block_height + 1000, app.last_preload_block_height)
-            if app.node_last_block > start_preload_block_height:
-                stop_preload_block_height = min(start_preload_block_height + max(DEFAULT_BLOCK_PRELOAD_CACHE_SIZE - app.block_preload_cache.len(),0),app.node_last_block)
-                if stop_preload_block_height>start_preload_block_height+1000:
-                    app.log.info("start preloading block task from %s to %s" % (start_preload_block_height,stop_preload_block_height))
-                    preload_tasks=[]
-                    for i in range(app.preload_workers):
-                        preload_tasks.append(app.loop.create_task(preload_blocks_worker(app,i, start_preload_block_height+i,stop_preload_block_height)))
-                    if preload_tasks: await asyncio.wait(preload_tasks)
-                    app.log.info("DONE preloading block task from %s to %s" % (start_preload_block_height, stop_preload_block_height))
+            if app.last_block_height!=-1:
+                start_preload_block_height= max(app.last_block_height + 1000, app.last_preload_block_height)
+                if app.node_last_block > start_preload_block_height:
+                    stop_preload_block_height = min(start_preload_block_height + max(DEFAULT_BLOCK_PRELOAD_CACHE_SIZE - app.block_preload_cache.len(),0),app.node_last_block)
+                    if stop_preload_block_height>start_preload_block_height+1000:
+                        app.log.info("start preloading block task from %s to %s" % (start_preload_block_height,stop_preload_block_height))
+                        preload_tasks=[]
+                        for i in range(app.preload_workers):
+                            preload_tasks.append(app.loop.create_task(preload_blocks_worker(app,i, start_preload_block_height+i,stop_preload_block_height)))
+                        if preload_tasks: await asyncio.wait(preload_tasks)
+                        app.log.info("DONE preloading block task from %s to %s" % (start_preload_block_height, stop_preload_block_height))
         except asyncio.CancelledError:
             app.log.info("connector preload_block terminated")
             break

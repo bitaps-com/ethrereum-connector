@@ -125,7 +125,6 @@ class Connector:
         self.tasks.append(self.loop.create_task(websocket.client(self)))
         await asyncio.sleep(1)
         self.tasks.append(self.loop.create_task(self.watchdog_task()))
-        await asyncio.sleep(1)
         if self.preload:
             self.tasks.append(self.loop.create_task(handler.preload_blocks(self)))
 
@@ -154,28 +153,30 @@ class Connector:
         tx_timestamp = int(time.time())
         self.tx_in_process.add(tx_hash)
         try:
-            tx_cache = self.pending_tx_cache.get(bin_tx_hash)
-            if tx_cache:
-                # pending transaction is rebroadcasted
-                if block_height==-1:
-                    await handler.pending_tx_update(self, bin_tx_hash, tx_timestamp, db_pool=self.db_pool)
+            tx_cache_confirmed = self.confirmed_tx_cache.get(bin_tx_hash)
+            if not tx_cache_confirmed:
+                tx_cache = self.pending_tx_cache.get(bin_tx_hash)
+                if tx_cache:
+                    # pending transaction is rebroadcasted
+                    if block_height==-1:
+                        await handler.pending_tx_update(self, bin_tx_hash, tx_timestamp, db_pool=self.db_pool)
+                        self.pending_tx_cache.set(bin_tx_hash, (-1, tx_timestamp))
+                        return
+                else:
+                    # new transaction
+                    if tx is None:
+                        try:
+                            tx = await node.get_transaction(self,tx_hash)
+                            if not(tx_hash == tx["hash"]): raise Exception
+                        except:
+                            if tx_hash in self.active_block_await_tx_list:
+                                raise
+                            else:
+                                # some pending transactions return None, do not handle it
+                                return
+                    tx["timestamp"] = tx_timestamp
+                    await handler.tx(self, tx, db_pool=self.db_pool)
                     self.pending_tx_cache.set(bin_tx_hash, (-1, tx_timestamp))
-                    return
-            else:
-                # new transaction
-                if tx is None:
-                    try:
-                        tx = await node.get_transaction(self,tx_hash)
-                        if not(tx_hash == tx["hash"]): raise Exception
-                    except:
-                        if tx_hash in self.active_block_await_tx_list:
-                            raise
-                        else:
-                            # some pending transactions return None, do not handle it
-                            return
-                tx["timestamp"] = tx_timestamp
-                await handler.tx(self, tx, db_pool=self.db_pool)
-                self.pending_tx_cache.set(bin_tx_hash, (-1, tx_timestamp))
             if block_height!=-1:
                 if tx_hash in self.active_block_await_tx_list:
                     self.active_block_await_tx_list.remove(tx_hash)
@@ -240,7 +241,7 @@ class Connector:
                         orphan_bin_block_hash = connector_cache.get_block_hash_by_height(self, orphan_block_height)
                         await handler.orphan(self,orphan_block_height,orphan_bin_block_hash, db_pool=self.db_pool)
                         connector_cache.remove_orphan(self,orphan_block_height,orphan_bin_block_hash)
-                        self.log.warning("removed orphan %s" % self.last_block_height)
+                        self.log.warning("removed orphan %s hash 0x%s" % (orphan_block_height, hexlify(orphan_bin_block_hash).decode()))
                         self.last_block_height -= 1
                         next_block_height = self.last_block_height + 1
                         if self.active_block_txs: self.active_block_txs.cancel()
@@ -252,6 +253,7 @@ class Connector:
                 self.active_block_txs = asyncio.Future()
                 self.active_block_await_tx_list = [tx["hash"] for tx in block["transactions"]]
                 for tx in block["transactions"]:
+                    self.log.debug("block new transaction %s" % tx["hash"])
                     self.loop.create_task(self.new_transaction(tx["hash"], tx=tx, block_height=block_height, block_time=block_time))
                 await asyncio.wait_for(self.active_block_txs, timeout=self.block_handler_timeout)
             await handler.block(self, block, db_pool=self.db_pool)
