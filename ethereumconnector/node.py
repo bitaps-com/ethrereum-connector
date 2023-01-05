@@ -81,10 +81,16 @@ async def get_block_trace_and_receipt(app, block_height, block_hash, transaction
                 if not tx['transactionHash'] in trace: trace[tx['transactionHash']] = list()
                 trace[tx['transactionHash']].append(tx)
         receipt = {}
-        if CLIENTS[app.client]["getBlockReceipts_method"]:
-            func_name = CLIENTS[app.client]["getBlockReceipts_method"]
+        if CLIENTS[app.client]["getBlockReceipts"]["method"]:
+            func_name = CLIENTS[app.client]["getBlockReceipts"]["method"]
             func = getattr(app.rpc, func_name)
-            block_receipt = await func(hex(block_height))
+            if CLIENTS[app.client]["getBlockReceipts"]["params"] == "height":
+                block_receipt = await func(hex(block_height))
+            elif CLIENTS[app.client]["getBlockReceipts"]["params"] == "hash":
+                block_receipt = await func(block_hash)
+            else:
+                CLIENTS[app.client]["getBlockReceipts"]["method"] = None
+                raise Exception('unknown getBlockReceipts functions setup params for %s client' % app.client)
             if not (block_receipt[0]['blockHash'] == block_hash):
                 raise Exception('block receipt hash %s block hash %s' % (block_receipt[0]['blockHash'], block_hash))
         else:
@@ -103,8 +109,8 @@ async def get_block_trace_and_receipt(app, block_height, block_hash, transaction
                 tx['trace'] = trace[tx['hash']]
                 if 'error' in trace[tx['hash']][0]:
                     if tx['status']==1:
-                        print("not normal tx",tx)
-                    tx['status'] = 0
+                        app.log.warning("tx %s with status OK, but error during tracing" %tx["hash"])
+                        tx['status'] = 0
 
 
 

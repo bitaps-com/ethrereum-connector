@@ -10,9 +10,10 @@ DEFAULT_EXPIRED_PENDING_TX_TIME = 43200 #12 hours
 DEFAULT_RPC_TIMEOUT = 60
 DEFAULT_BLOCK_HANDLER_TIMEOUT = 120
 
-CLIENTS={"geth":{"trace":False, "getBlockReceipts_method":None},
-         "nethermind":{"trace":True, "getBlockReceipts_method":"parity_getBlockReceipts"},
-         "erigon":{"trace":True, "getBlockReceipts_method":None}}
+CLIENTS={"geth":{"trace":False, "getBlockReceipts":{"method":None}},
+         "nethermind":{"trace":True, "getBlockReceipts":{"method":"parity_getBlockReceipts", "params":"height"}},
+         "erigon":{"trace":True, "getBlockReceipts":{"method":"erigon_getBlockReceiptsByBlockHash", "params":"hash"}} #>=v2.32.0
+         }
 
 class Cache():
     def __init__(self, max_size=0):
