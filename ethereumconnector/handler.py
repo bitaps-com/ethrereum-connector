@@ -45,6 +45,10 @@ async def block(app, block, **kwargs):
     if app.connector_db:
         await connector_db.block_handler(block, conn)
 
+async def before_block(app, block):
+    if app.before_block_handler:
+        await app.before_block_handler(block)
+
 async def preload_blocks(app):
     while True:
         try:

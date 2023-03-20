@@ -24,6 +24,7 @@ class Connector:
                  start_block=None,  # start block height sync, if not specified - use current block
                  rollback_block=None,  # used for long orphans chain
                  tx_handler=None,
+                 before_block_handler=None,
                  block_handler=None,
                  orphan_handler=None,
                  pending_tx_update_handler=None,
@@ -59,6 +60,7 @@ class Connector:
         self.start_block = start_block
         self.rollback_block=rollback_block
         self.tx_handler = tx_handler
+        self.before_block_handler = before_block_handler
         self.block_handler = block_handler
         self.block_handler_timeout = block_handler_timeout
         self.orphan_handler = orphan_handler
@@ -239,6 +241,7 @@ class Connector:
                             else:
                                 self.confirmed_tx_cache,self.pending_tx_cache, self.block_cache = await self.cache_load_handler()
                         orphan_bin_block_hash = connector_cache.get_block_hash_by_height(self, orphan_block_height)
+                        await handler.before_block(self,block)
                         await handler.orphan(self,orphan_block_height,orphan_bin_block_hash, db_pool=self.db_pool)
                         connector_cache.remove_orphan(self,orphan_block_height,orphan_bin_block_hash)
                         self.log.warning("removed orphan %s hash 0x%s" % (orphan_block_height, hexlify(orphan_bin_block_hash).decode()))
@@ -256,6 +259,7 @@ class Connector:
                     self.log.debug("block new transaction %s" % tx["hash"])
                     self.loop.create_task(self.new_transaction(tx["hash"], tx=tx, block_height=block_height, block_time=block_time))
                 await asyncio.wait_for(self.active_block_txs, timeout=self.block_handler_timeout)
+            await handler.before_block(self, block)
             await handler.block(self, block, db_pool=self.db_pool)
             for tx in block["transactions"]:
                 tx_cache = self.pending_tx_cache.pop(unhexlify(tx["hash"][2:]))
