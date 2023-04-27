@@ -9,7 +9,7 @@ async def pending_tx_expire(app, pendings_expired_hash_list, **kwargs):
     if app.pending_tx_expire_handler:
         await app.pending_tx_expire_handler(pendings_expired_hash_list, conn=conn)
     if app.connector_db:
-        await connector_db.pending_tx_expire_handler(pendings_expired_hash_list, conn)
+        await connector_db.pending_tx_expire_handler(app, pendings_expired_hash_list, conn)
 
 @transaction
 async def pending_tx_update(app, bin_tx_hash, last_seen_timestamp, **kwargs):
@@ -17,7 +17,7 @@ async def pending_tx_update(app, bin_tx_hash, last_seen_timestamp, **kwargs):
     if app.pending_tx_update_handler:
         await app.pending_tx_update_handler(bin_tx_hash, last_seen_timestamp, conn=conn)
     if app.connector_db:
-        await connector_db.pending_tx_update_handler(bin_tx_hash, last_seen_timestamp, conn)
+        await connector_db.pending_tx_update_handler(app, bin_tx_hash, last_seen_timestamp, conn)
 
 @transaction
 async def tx(app, tx, **kwargs):
@@ -27,7 +27,7 @@ async def tx(app, tx, **kwargs):
         await app.tx_handler(tx, conn=conn)
         if tx["handler_result"] != 0 and tx["handler_result"] != 1: raise Exception('tx handler error')
     if app.connector_db:
-        await connector_db.tx_handler(tx, conn)
+        await connector_db.tx_handler(app, tx, conn)
 
 @transaction
 async def orphan(app,orphan_block_height,orphan_bin_block_hash, **kwargs):
@@ -35,7 +35,7 @@ async def orphan(app,orphan_block_height,orphan_bin_block_hash, **kwargs):
     if app.orphan_handler:
         await app.orphan_handler(orphan_block_height, orphan_bin_block_hash, conn=conn)
     if app.connector_db:
-        await connector_db.orphan_handler(orphan_block_height, orphan_bin_block_hash, conn)
+        await connector_db.orphan_handler(app, orphan_block_height, orphan_bin_block_hash, conn)
 
 @transaction
 async def block(app, block, **kwargs):
@@ -43,7 +43,7 @@ async def block(app, block, **kwargs):
     if app.block_handler:
         await app.block_handler(block, conn=conn)
     if app.connector_db:
-        await connector_db.block_handler(block, conn)
+        await connector_db.block_handler(app, block, conn)
 
 async def before_block(app, block):
     if app.before_block_handler:

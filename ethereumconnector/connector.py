@@ -30,6 +30,7 @@ class Connector:
                  pending_tx_update_handler=None,
                  pending_tx_expire_handler = None,
                  cache_load_handler=None,
+                 token = None,
                  ):
         self.loop = loop
         self.log = logger
@@ -76,6 +77,8 @@ class Connector:
         self.tx_subscription_id = False
         self.block_subscription_id = False
         self.db_pool = False
+        self.block_table = 'connector_blockERC20_' + str(token) if token else 'connector_block'
+        self.transaction_table = 'connector_transactionERC20_' + str(token) if token else 'connector_transaction'
 
         self.active_block = asyncio.Future()
         self.active_block.set_result(True)
