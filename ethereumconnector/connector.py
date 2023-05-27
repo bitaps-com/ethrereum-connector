@@ -320,6 +320,7 @@ class Connector:
                         if pendings_expired_hash_list:
                             await handler.pending_tx_expire(self,pendings_expired_hash_list, db_pool=self.db_pool)
                             [self.pending_tx_cache.pop(tx_hash) for tx_hash in pendings_expired_hash_list]
+                        await handler.confirmed_tx_expire(self, db_pool=self.db_pool)
                     except:
                         raise
                     finally:

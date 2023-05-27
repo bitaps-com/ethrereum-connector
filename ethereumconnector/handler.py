@@ -12,6 +12,12 @@ async def pending_tx_expire(app, pendings_expired_hash_list, **kwargs):
         await connector_db.pending_tx_expire_handler(app, pendings_expired_hash_list, conn)
 
 @transaction
+async def confirmed_tx_expire(app, **kwargs):
+    conn = kwargs.get("conn", None)
+    if app.connector_db:
+        await connector_db.confirmed_tx_expire_handler(app, conn)
+
+@transaction
 async def pending_tx_update(app, bin_tx_hash, last_seen_timestamp, **kwargs):
     conn = kwargs.get("conn", None)
     if app.pending_tx_update_handler:

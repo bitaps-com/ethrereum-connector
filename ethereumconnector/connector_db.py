@@ -76,6 +76,10 @@ async def pending_tx_expire_handler(app, expired_hash_list, conn):
     stmt = await conn.prepare(f"DELETE FROM {app.transaction_table} WHERE hash = ANY ($1)")
     await stmt.fetch(expired_hash_list)
 
+async def confirmed_tx_expire_handler(app, conn, block_exp = 100000):
+    stmt = await conn.prepare(f"DELETE FROM {app.transaction_table} WHERE height < ($1) and affected != 'B1'")
+    await stmt.fetch(app.last_block_height-block_exp)
+
 async def orphan_handler(app, orphan_block_height,orphan_bin_block_hash, conn):
     stmt = await conn.prepare(f"DELETE FROM {app.block_table} WHERE hash = $1;")
     await stmt.fetch(orphan_bin_block_hash)
