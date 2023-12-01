@@ -45,7 +45,7 @@ class Connector:
             if CLIENTS[client]["trace"]:
                 self.trace=True
             else:
-                raise Exception("trace module for client %s is not supported" % client)
+                logger.warning("trace module for client %s is not supported" % client)
         self.connector_db = connector_db
         self.postgresql_dsn = postgresql_dsn
         self.postgresql_pool_max_size = postgresql_pool_max_size
