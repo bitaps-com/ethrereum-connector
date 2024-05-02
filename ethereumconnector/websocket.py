@@ -61,15 +61,19 @@ async def client(app):
         await asyncio.sleep(1)
 
 async def subscribe_blocks(app):
-    await app.ws.send_str('{"jsonrpc":"2.0", "id": 1, "method":"eth_subscribe", "params": ["newHeads"]}')
+    if app.subscribe_blocks:
+        await app.ws.send_str('{"jsonrpc":"2.0", "id": 1, "method":"eth_subscribe", "params": ["newHeads"]}')
 
 async def unsubscribe_blocks(app):
-    await app.ws.send_str('{"jsonrpc":"2.0","id": 3, "method":"eth_unsubscribe", "params": ["%s"]}' % app.block_subscription_id)
-    app.log.info("Blocks subscription canceled")
+    if app.subscribe_blocks:
+        await app.ws.send_str('{"jsonrpc":"2.0","id": 3, "method":"eth_unsubscribe", "params": ["%s"]}' % app.block_subscription_id)
+        app.log.info("Blocks subscription canceled")
 
 async def subscribe_transactions(app):
-    await app.ws.send_str('{"jsonrpc":"2.0","id": 2, "method": "eth_subscribe", "params": ["newPendingTransactions"]}')
+    if app.subscribe_txs:
+        await app.ws.send_str('{"jsonrpc":"2.0","id": 2, "method": "eth_subscribe", "params": ["newPendingTransactions"]}')
 
 async def unsubscribe_transactions(app):
-    await app.ws.send_str('{"jsonrpc":"2.0","id": 4, "method": "eth_unsubscribe", "params": ["%s"]}' % app.tx_subscription_id)
-    app.log.info("Transactions subscription canceled")
+    if app.subscribe_txs:
+        await app.ws.send_str('{"jsonrpc":"2.0","id": 4, "method": "eth_unsubscribe", "params": ["%s"]}' % app.tx_subscription_id)
+        app.log.info("Transactions subscription canceled")

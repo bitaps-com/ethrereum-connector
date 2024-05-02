@@ -15,6 +15,8 @@ class Connector:
                  socket_url,
                  client,
                  trace = False,
+                 subscribe_blocks = True,
+                 subscribe_txs = True,
                  connector_db = True,  # use connector database
                  postgresql_dsn = None,  # connector database settings
                  postgresql_pool_max_size=50,  # connector database settings
@@ -47,6 +49,8 @@ class Connector:
                 self.trace=True
             else:
                 logger.warning("trace module for client %s is not supported" % client)
+        self.subscribe_blocks = subscribe_blocks
+        self.subscribe_txs = subscribe_txs
         self.connector_db = connector_db
         self.postgresql_dsn = postgresql_dsn
         self.postgresql_pool_max_size = postgresql_pool_max_size
