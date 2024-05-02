@@ -5,6 +5,7 @@ import traceback
 
 async def client(app):
     while True:
+        if not app.active: raise asyncio.CancelledError
         try:
             tcp_connector = aiohttp.TCPConnector(verify_ssl=False)
             session = aiohttp.ClientSession(connector=tcp_connector)
