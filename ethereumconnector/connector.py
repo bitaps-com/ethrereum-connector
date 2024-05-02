@@ -153,16 +153,22 @@ class Connector:
         self.log.warning("Stopping connector")
         self.log.warning("New block processing restricted")
         self.connected.cancel()
-        if self.block_subscription_id:
-           await websocket.unsubscribe_blocks(self)
-        if self.tx_subscription_id:
-            await websocket.unsubscribe_transactions(self)
         if not self.active_block.done():
             await self.active_block
         [task.cancel() for task in self.tasks]
         if self.tasks: await asyncio.wait(self.tasks)
         if self.db_pool:
             await self.db_pool.close()
+        if self.block_subscription_id:
+           try:
+               await websocket.unsubscribe_blocks(self)
+           except:
+               pass
+        if self.tx_subscription_id:
+            try:
+                await websocket.unsubscribe_transactions(self)
+            except:
+                pass
         self.log.warning('Connector ready to shutdown')
 
     async def new_transaction(self, tx_hash, tx = None, block_height = -1, block_time = None):
