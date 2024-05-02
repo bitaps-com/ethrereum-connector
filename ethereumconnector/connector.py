@@ -303,8 +303,8 @@ class Connector:
 
     async def watchdog_task(self):
         while True:
+            if not self.active: break
             try:
-                self.log.info("watchdog started")
                 while True:
                     try:
                         # 1 check database connection

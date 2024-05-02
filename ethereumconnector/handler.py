@@ -57,6 +57,7 @@ async def before_block(app, block):
 
 async def preload_blocks(app):
     while True:
+        if not app.active: break
         try:
             if app.last_block_height!=-1:
                 start_preload_block_height= max(app.last_block_height + 1000, app.last_preload_block_height)
