@@ -10,8 +10,8 @@ DEFAULT_EXPIRED_PENDING_TX_TIME = 43200 #12 hours
 DEFAULT_RPC_TIMEOUT = 60
 DEFAULT_BLOCK_HANDLER_TIMEOUT = 120
 
-CLIENTS={"geth":{"trace":False, "getBlockReceipts":{"method":None}},
-         "nethermind":{"trace":True, "getBlockReceipts":{"method":"parity_getBlockReceipts", "params":"height"}},
+CLIENTS={"geth":{"trace":False, "getBlockReceipts":{"method":"eth_getBlockReceipts", "params":"height"}},
+         "nethermind":{"trace":True, "getBlockReceipts":{"method":"eth_getBlockReceipts", "params":"height"}},
          "erigon":{"trace":True, "getBlockReceipts":{"method":"erigon_getBlockReceiptsByBlockHash", "params":"hash"}} #>=v2.32.0
          }
 
