@@ -122,7 +122,9 @@ class Connector:
                 await connector_db.create_pool(self)
             self.last_block_height = connector_cache.get_last_block_height(self)
             self.rpc = aiojsonrpc.rpc(self.rpc_url, self.loop, timeout=self.rpc_timeout)
-            await node.health_check(self)
+            health_check = await self.health_check()
+            if not health_check:
+                raise Exception("Health check failed")
             node_client = await node.check_client(self)
             if self.client not in node_client.lower():
                 raise Exception("Incorrect client")
@@ -138,6 +140,13 @@ class Connector:
         if self.preload:
             self.tasks.append(self.loop.create_task(handler.preload_blocks(self)))
 
+
+    async def health_check(self):
+        try:
+            await node.health_check(self)
+            return True
+        except:
+            return False
 
     async def stop(self):
         self.active = False
