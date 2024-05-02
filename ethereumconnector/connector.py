@@ -78,8 +78,12 @@ class Connector:
         self.tx_subscription_id = False
         self.block_subscription_id = False
         self.db_pool = False
-        self.block_table = 'connector_block_'+network+'_' + str(token) if token else 'connector_block'
-        self.transaction_table = 'connector_transaction_'+network+'_' + str(token) if token else 'connector_transaction'
+        if network and token:
+            postfix = '_'+network+'_' + token
+        else:
+            postfix = ''
+        self.block_table = 'connector_block'+postfix
+        self.transaction_table = 'connector_transaction'+postfix
 
         self.active_block = asyncio.Future()
         self.active_block.set_result(True)
