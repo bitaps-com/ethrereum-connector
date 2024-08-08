@@ -7,7 +7,7 @@ import traceback
 async def pending_tx_expire(app, pendings_expired_hash_list, **kwargs):
     conn = kwargs.get("conn", None)
     if app.pending_tx_expire_handler:
-        await app.pending_tx_expire_handler(pendings_expired_hash_list, conn=conn, token = app.token)
+        await app.pending_tx_expire_handler(pendings_expired_hash_list, conn=conn, asset = app.asset)
     if app.connector_db:
         await connector_db.pending_tx_expire_handler(app, pendings_expired_hash_list, conn)
 
@@ -21,7 +21,7 @@ async def confirmed_tx_expire(app, **kwargs):
 async def pending_tx_update(app, bin_tx_hash, last_seen_timestamp, **kwargs):
     conn = kwargs.get("conn", None)
     if app.pending_tx_update_handler:
-        await app.pending_tx_update_handler(bin_tx_hash, last_seen_timestamp, conn=conn,  token = app.token)
+        await app.pending_tx_update_handler(bin_tx_hash, last_seen_timestamp, conn=conn,  asset = app.asset)
     if app.connector_db:
         await connector_db.pending_tx_update_handler(app, bin_tx_hash, last_seen_timestamp, conn)
 
@@ -30,7 +30,7 @@ async def tx(app, tx, **kwargs):
     conn = kwargs.get("conn", None)
     tx["handler_result"] = 0
     if app.tx_handler:
-        await app.tx_handler(tx, conn=conn, token = app.token)
+        await app.tx_handler(tx, conn=conn, asset = app.asset)
         if tx["handler_result"] != 0 and tx["handler_result"] != 1: raise Exception('tx handler error')
     if app.connector_db:
         await connector_db.tx_handler(app, tx, conn)
@@ -39,7 +39,7 @@ async def tx(app, tx, **kwargs):
 async def orphan(app,orphan_block_height,orphan_bin_block_hash, **kwargs):
     conn = kwargs.get("conn", None)
     if app.orphan_handler:
-        await app.orphan_handler(orphan_block_height, orphan_bin_block_hash, conn=conn, token = app.token)
+        await app.orphan_handler(orphan_block_height, orphan_bin_block_hash, conn=conn, asset = app.asset)
     if app.connector_db:
         await connector_db.orphan_handler(app, orphan_block_height, orphan_bin_block_hash, conn)
 
@@ -47,13 +47,13 @@ async def orphan(app,orphan_block_height,orphan_bin_block_hash, **kwargs):
 async def block(app, block, **kwargs):
     conn=kwargs.get("conn",None)
     if app.block_handler:
-        await app.block_handler(block, conn=conn, token = app.token)
+        await app.block_handler(block, conn=conn, asset = app.asset)
     if app.connector_db:
         await connector_db.block_handler(app, block, conn)
 
 async def before_block(app, block):
     if app.before_block_handler:
-        await app.before_block_handler(block, token = app.token)
+        await app.before_block_handler(block, asset = app.asset)
 
 async def preload_blocks(app):
     while True:
