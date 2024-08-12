@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import functools
+from binascii import hexlify, unhexlify
 
 DEFAULT_CONFIRMED_TX_CACHE_SIZE = 10000
 DEFAULT_BLOCK_CACHE_SIZE = 200
@@ -86,3 +87,6 @@ def transaction(func):
         else:
             await func(*args, conn=None, **kwargs)
     return wrapper
+
+def hex_to_bytes(hex_type):
+        return unhexlify(hex_type[2:]) if hex_type.startswith("0x") else unhexlify(hex_type)

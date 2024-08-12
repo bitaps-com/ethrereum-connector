@@ -1,5 +1,4 @@
 import asyncio
-from binascii import hexlify, unhexlify
 import asyncpg
 from .utils import *
 import traceback
@@ -59,14 +58,14 @@ async def cache_load_handler(app, conn):
 
 async def block_handler(app, block, conn):
     stmt = await conn.prepare(f"INSERT INTO {app.block_table} (hash, height, previous_hash, timestamp) VALUES ($1, $2, $3, $4);")
-    await stmt.fetch(unhexlify(block["hash"][2:]), int(block["number"], 16), unhexlify(block["parentHash"][2:]) if "parentHash" in block else None, int(block['timestamp'], 16))
-    tx_hash_list = [unhexlify(tx["hash"][2:]) for tx in block["transactions"]]
+    await stmt.fetch(hex_to_bytes(block["hash"]), int(block["number"], 16), hex_to_bytes(block["parentHash"]) if "parentHash" in block else None, int(block['timestamp'], 16))
+    tx_hash_list = [hex_to_bytes(tx["hash"]) for tx in block["transactions"]]
     stmt = await conn.prepare(f"UPDATE {app.transaction_table} SET height = $1, timestamp=$2  WHERE hash = ANY ($3);")
     await stmt.fetch(int(block["number"], 16), int(block['timestamp'], 16), tx_hash_list)
 
 async def tx_handler(app, tx, conn):
     stmt = await conn.prepare(f"INSERT INTO {app.transaction_table} (hash, timestamp, last_timestamp, affected) VALUES ($1, $2, $3, $4);")
-    await stmt.fetch(unhexlify(tx["hash"][2:]), tx["timestamp"], tx["timestamp"], asyncpg.BitString('1') if tx["handler_result"] else asyncpg.BitString('0'))
+    await stmt.fetch(hex_to_bytes(tx["hash"]), tx["timestamp"], tx["timestamp"], asyncpg.BitString('1') if tx["handler_result"] else asyncpg.BitString('0'))
 
 async def pending_tx_update_handler(app, bin_tx_hash,last_seen_timestamp,conn):
     stmt = await conn.prepare(f"UPDATE {app.transaction_table} SET last_timestamp = $1  WHERE hash=$2;")

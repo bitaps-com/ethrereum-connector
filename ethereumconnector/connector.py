@@ -2,7 +2,6 @@ import asyncio
 import asyncpg
 import aiojsonrpc
 import time
-from binascii import hexlify, unhexlify
 from . import websocket,handler,connector_db,connector_cache,node
 from .utils import *
 import traceback
@@ -180,7 +179,7 @@ class Connector:
     async def new_transaction(self, tx_hash, tx = None, block_height = -1, block_time = None):
         if not self.active: return
         if tx_hash in self.tx_in_process: return
-        bin_tx_hash=unhexlify(tx_hash[2:])
+        bin_tx_hash=hex_to_bytes(tx_hash)
         tx_timestamp = int(time.time())
         self.tx_in_process.add(tx_hash)
         try:
@@ -227,8 +226,8 @@ class Connector:
         if not self.active: return
         if not self.active_block.done(): return
         self.active_block = asyncio.Future()
-        bin_block_hash = unhexlify(block["hash"][2:])
-        bin_previousblock_hash = unhexlify(block["parentHash"][2:]) if "parentHash" in block else None
+        bin_block_hash = hex_to_bytes(block["hash"])
+        bin_previousblock_hash = hex_to_bytes(block["parentHash"]) if "parentHash" in block else None
         start_handle_timestamp = time.time()
         block_height = int(block["number"], 16)
         block_time=int(block['timestamp'],16)
@@ -291,8 +290,8 @@ class Connector:
             await handler.before_block(self, block)
             await handler.block(self, block, db_pool=self.db_pool)
             for tx in block["transactions"]:
-                tx_cache = self.pending_tx_cache.pop(unhexlify(tx["hash"][2:]))
-                self.confirmed_tx_cache.set(unhexlify(tx["hash"][2:]), (block_height, tx_cache[1]))
+                tx_cache = self.pending_tx_cache.pop(hex_to_bytes(tx["hash"]))
+                self.confirmed_tx_cache.set(hex_to_bytes(tx["hash"]), (block_height, tx_cache[1]))
             self.block_cache.set(bin_block_hash, block_height)
             self.last_block_height = block_height
             if self.node_last_block > self.last_block_height:
