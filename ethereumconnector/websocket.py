@@ -2,6 +2,12 @@ import aiohttp
 import json
 import asyncio
 import traceback
+try:
+    import zmq
+    import zmq.asyncio
+except:
+    pass
+from . import node
 
 async def client(app):
     while True:
@@ -59,6 +65,62 @@ async def client(app):
         finally:
             await session.close()
         await asyncio.sleep(1)
+
+
+async def zeromq_handler(app):
+    while True:
+        try:
+            app.zmqContext = zmq.asyncio.Context()
+            app.zmqSubSocket = app.zmqContext.socket(zmq.SUB)
+            app.zmqSubSocket.connect(app.socket_url)
+            app.zmqSubSocket.setsockopt_string(zmq.SUBSCRIBE,'blockTrigger')
+            app.zmqSubSocket.setsockopt_string(zmq.SUBSCRIBE,'transactionTrigger')
+            app.log.info("Zeromq started")
+            app.connected.set_result(True)
+
+            while True:
+                try:
+                    msg = await app.zmqSubSocket.recv_multipart()
+                    topic = msg[0]
+
+                    if topic == b"blockTrigger":
+                        body = json.loads(msg[1])
+                        block = await node.get_block_by_height(app, body["blockNumber"])
+                        if block:
+                            block_task = app.new_block(block)
+                            app.log.debug("websocket new block %s" % body["blockNumber"])
+                            app.loop.create_task(block_task)
+
+                    elif topic == b"transactionTrigger":
+                        body = json.loads(msg[1])
+                        tx_task = app.new_transaction(body["transactionId"])
+                        app.log.debug("websocket new transaction %s" % body["transactionId"])
+                        app.loop.create_task(tx_task)
+
+                    if not app.active:
+                        break
+                except asyncio.CancelledError:
+                    app.connected = asyncio.Future()
+                    app.log.warning("Zeromq handler terminating ...")
+                    raise
+                except Exception as err:
+                    app.connected = asyncio.Future()
+                    app.log.error(str(err))
+
+        except asyncio.CancelledError:
+            app.zmqContext.destroy()
+            app.connected = asyncio.Future()
+            app.log.warning("Zeromq handler terminated")
+            break
+        except Exception as err:
+            app.log.error(str(err))
+            await asyncio.sleep(1)
+            app.connected = asyncio.Future()
+            app.log.warning("Zeromq handler reconnecting ...")
+        if not app.active:
+            app.connected = asyncio.Future()
+            app.log.warning("Zeromq handler terminated")
+            break
 
 async def subscribe_blocks(app):
     if app.subscribe_blocks:

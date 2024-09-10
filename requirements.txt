@@ -2,3 +2,4 @@ aiohttp==3.7.4
 asyncpg
 colorlog
 https://github.com/bitaps-com/aiojsonrpc
+pyzmq

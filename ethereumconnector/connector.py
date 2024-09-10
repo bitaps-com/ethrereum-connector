@@ -103,6 +103,7 @@ class Connector:
 
         self.connected = asyncio.Future()
         self.tasks = list()
+        self.zmqContext = None
         self.rpc = None
         self.ws = None
 
@@ -139,7 +140,10 @@ class Connector:
             self.active=False
             await self.stop()
             return
-        self.tasks.append(self.loop.create_task(websocket.client(self)))
+        if self.client.lower()!='tron':
+            self.tasks.append(self.loop.create_task(websocket.client(self)))
+        else:
+            self.tasks.append(self.loop.create_task(websocket.zeromq_handler(self)))
         await asyncio.sleep(1)
         self.tasks.append(self.loop.create_task(self.watchdog_task()))
         if self.preload:
@@ -174,6 +178,8 @@ class Connector:
                 await websocket.unsubscribe_transactions(self)
             except:
                 pass
+        if self.zmqContext:
+            self.zmqContext.destroy()
         self.log.warning('Connector ready to shutdown')
 
     async def new_transaction(self, tx_hash, tx = None, block_height = -1, block_time = None):
@@ -327,12 +333,13 @@ class Connector:
                         # 2 enable/disable subsriptions
                         data = await node.get_last_block(self)
                         self.node_last_block = int(data, 16)
-                        if self.node_last_block > self.last_block_height + 1000:
-                            if self.block_subscription_id: await websocket.unsubscribe_blocks(self)
-                            if self.tx_subscription_id: await websocket.unsubscribe_transactions(self)
-                        else:
-                            if not self.block_subscription_id: await websocket.subscribe_blocks(self)
-                            if not self.tx_subscription_id: await websocket.subscribe_transactions(self)
+                        if self.client.lower() != 'tron':
+                            if self.node_last_block > self.last_block_height + 1000:
+                                if self.block_subscription_id: await websocket.unsubscribe_blocks(self)
+                                if self.tx_subscription_id: await websocket.unsubscribe_transactions(self)
+                            else:
+                                if not self.block_subscription_id: await websocket.subscribe_blocks(self)
+                                if not self.tx_subscription_id: await websocket.subscribe_transactions(self)
                         # 3 check last block
                         if self.node_last_block > self.last_block_height:
                             next_block_height = self.last_block_height+1 if self.last_block_height!=-1 else self.node_last_block

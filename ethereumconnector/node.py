@@ -6,6 +6,7 @@ async def health_check(app):
     try:
         return await app.rpc.eth_syncing()
     except Exception:
+        app.log.error(str(traceback.format_exc()))
         app.log.error("Health check failed")
         raise
 
@@ -13,6 +14,7 @@ async def check_client(app):
     try:
         return await app.rpc.web3_clientVersion()
     except Exception:
+        app.log.error(str(traceback.format_exc()))
         app.log.error("client check failed")
         raise
 

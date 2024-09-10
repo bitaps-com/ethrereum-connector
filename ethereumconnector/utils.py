@@ -14,7 +14,7 @@ DEFAULT_BLOCK_HANDLER_TIMEOUT = 120
 CLIENTS={"geth":{"trace":False, "getBlockReceipts":{"method":"eth_getBlockReceipts", "params":"height"}},
          "nethermind":{"trace":True, "getBlockReceipts":{"method":"eth_getBlockReceipts", "params":"height"}},
          "erigon":{"trace":True, "getBlockReceipts":{"method":"erigon_getBlockReceiptsByBlockHash", "params":"hash"}}, #>=v2.32.0
-         "tron":{"trace":False, "getBlockReceipts":{"method":"eth_getBlockReceipts", "params":"height"}}}
+         "tron":{"trace":False, "getBlockReceipts":{"method":None, "params":"height"}}}
 
 class Cache():
     def __init__(self, max_size=0):
