@@ -31,6 +31,7 @@ class Connector:
                  pending_tx_update_handler=None,
                  pending_tx_expire_handler = None,
                  cache_load_handler=None,
+                 watchdog_sleep=30,
                  network = "ERC20",
                  token = None,
                  ):
@@ -77,6 +78,7 @@ class Connector:
         self.block_preload_cache = Cache(max_size=DEFAULT_BLOCK_PRELOAD_CACHE_SIZE)
         self.preload_workers = 10
 
+        self.watchdog_sleep = watchdog_sleep
         self.active = True
         self.tx_subscription_id = False
         self.block_subscription_id = False
@@ -356,7 +358,7 @@ class Connector:
                     except:
                         raise
                     finally:
-                        await asyncio.sleep(30)
+                        await asyncio.sleep(self.watchdog_sleep)
             except asyncio.CancelledError:
                 break
             except Exception as err:
