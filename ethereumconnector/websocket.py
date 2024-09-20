@@ -12,7 +12,7 @@ from . import node
 async def client(app):
     if not app.socket_url:
         app.log.warning('socket disabled')
-        app.connected = asyncio.Future()
+        app.connected.set_result(True)
         return
     while True:
         if not app.active: raise asyncio.CancelledError
@@ -74,7 +74,7 @@ async def client(app):
 async def zeromq_handler(app):
     if not app.socket_url:
         app.log.warning('socket disabled')
-        app.connected = asyncio.Future()
+        app.connected.set_result(True)
         return
     while True:
         try:
