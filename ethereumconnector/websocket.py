@@ -10,6 +10,10 @@ except:
 from . import node
 
 async def client(app):
+    if not app.socket_url:
+        app.log.warning('socket disabled')
+        app.connected = asyncio.Future()
+        return
     while True:
         if not app.active: raise asyncio.CancelledError
         try:
@@ -68,6 +72,10 @@ async def client(app):
 
 
 async def zeromq_handler(app):
+    if not app.socket_url:
+        app.log.warning('socket disabled')
+        app.connected = asyncio.Future()
+        return
     while True:
         try:
             app.zmqContext = zmq.asyncio.Context()
