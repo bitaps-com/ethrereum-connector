@@ -16,6 +16,7 @@ class Connector:
                  trace = False,
                  subscribe_blocks = True,
                  subscribe_txs = True,
+                 get_receipts = True,
                  connector_db = True,  # use connector database
                  postgresql_dsn = None,  # connector database settings
                  postgresql_pool_max_size=50,  # connector database settings
@@ -34,6 +35,7 @@ class Connector:
                  watchdog_sleep=30,
                  network = "ERC20",
                  token = None,
+                 redis = None
                  ):
         self.loop = loop
         self.log = logger
@@ -51,6 +53,7 @@ class Connector:
                 logger.warning("trace module for client %s is not supported" % client)
         self.subscribe_blocks = subscribe_blocks
         self.subscribe_txs = subscribe_txs
+        self.get_receipts = get_receipts
         self.connector_db = connector_db
         self.postgresql_dsn = postgresql_dsn
         self.postgresql_pool_max_size = postgresql_pool_max_size
@@ -78,6 +81,7 @@ class Connector:
         self.block_preload_cache = Cache(max_size=DEFAULT_BLOCK_PRELOAD_CACHE_SIZE)
         self.preload_workers = 10
 
+        self.redis = redis
         self.watchdog_sleep = watchdog_sleep
         self.active = True
         self.tx_subscription_id = False
@@ -86,9 +90,11 @@ class Connector:
         if network and token:
             postfix = '_'+network+'_' + token
             self.asset = network+'_' + token
+            self.network = network
         else:
             postfix = ''
             self.asset = ''
+            self.network = network
         self.block_table = 'connector_block'+postfix
         self.transaction_table = 'connector_transaction'+postfix
 
@@ -295,6 +301,7 @@ class Connector:
                     self.log.debug("block new transaction %s" % tx["hash"])
                     self.loop.create_task(self.new_transaction(tx["hash"], tx=tx, block_height=block_height, block_time=block_time))
                 await asyncio.wait_for(self.active_block_txs, timeout=self.block_handler_timeout)
+            self.log.info( "%s transactions [%s] processing time [%s]" % (block_height, len(block["transactions"]), round(time.time() - start_handle_timestamp, 4)))
             await handler.before_block(self, block)
             await handler.block(self, block, db_pool=self.db_pool)
             for tx in block["transactions"]:
@@ -335,6 +342,7 @@ class Connector:
                         # 2 enable/disable subsriptions
                         data = await node.get_last_block(self)
                         self.node_last_block = int(data, 16)
+                        self.log.info('backlog %s blocks [%s - node, %s - client]' % (self.node_last_block - self.last_block_height, self.node_last_block,self.last_block_height))
                         if self.client.lower() != 'tron':
                             if self.node_last_block > self.last_block_height + 1000:
                                 if self.block_subscription_id: await websocket.unsubscribe_blocks(self)
@@ -343,7 +351,7 @@ class Connector:
                                 if not self.block_subscription_id: await websocket.subscribe_blocks(self)
                                 if not self.tx_subscription_id: await websocket.subscribe_transactions(self)
                         # 3 check last block
-                        if self.node_last_block > self.last_block_height:
+                        if self.node_last_block > self.last_block_height and self.active_block.done():
                             next_block_height = self.last_block_height+1 if self.last_block_height!=-1 else self.node_last_block
                             block = await node.get_block_by_height(self, next_block_height)
                             if block:
