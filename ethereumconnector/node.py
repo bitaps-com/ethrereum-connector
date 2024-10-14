@@ -58,6 +58,19 @@ async def get_transaction_receipt(app, tx_hash):
         app.log.error("Get get_transaction_receipt %s failed" % tx_hash)
         raise
 
+async def get_block_logs(app, block_hash):
+    try:
+        data = await app.redis.get(block_hash, namespace="%s.eth_getLogs" %app.network) if app.redis else None
+        if not data:
+            params = {"blockHash": block_hash}
+            data = await app.rpc.eth_getLogs(params)
+            if app.redis: await app.redis.set(block_hash, data, ttl=3600*6, namespace="%s.eth_getLogs" % app.network)
+        return data
+    except Exception:
+        app.log.error(str(traceback.format_exc()))
+        app.log.error("Get eth_getLogs %s failed" % block_hash)
+        raise
+
 async def get_block_by_height(app, block_height):
     try:
         data = await app.redis.get(hex(block_height), namespace="%s.eth_getBlockByNumber" % app.network) if app.redis else None
@@ -117,6 +130,14 @@ async def get_block_trace_and_receipt(app, block_height, block_hash, transaction
             for tx in block_receipt:
                 if not tx['transactionHash'] in receipt:receipt[tx['transactionHash']] = {}
                 receipt[tx['transactionHash']] = tx
+        else: #get only logs
+            block_logs = await get_block_logs(app, block_hash)
+            for log in block_logs:
+                try:
+                    receipt[log['transactionHash']]
+                except:
+                    receipt[log['transactionHash']] = {"logs":[]}
+                receipt[log['transactionHash']]["logs"].append(log)
         for tx in transactions:
             if tx['hash'] in receipt:
                 tx.update(receipt[tx['hash']])
